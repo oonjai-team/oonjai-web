@@ -98,7 +98,7 @@ export class ServiceConnector {
         if (f.status === 200) {
           return response.success()
         }
-      } catch {
+      } catch (_) {
         if (f.status === 200) {
           return response.success()
         }
@@ -106,7 +106,7 @@ export class ServiceConnector {
       }
 
       return response.failed()
-    } catch {
+    } catch (_) {
       return response.error("unable to fetch response")
     }
   }
@@ -167,7 +167,7 @@ export class ServiceConnector {
           response.setPayload(result as T)
 
           return response.success()
-        } catch {
+        } catch (_) {
           return response.success()
         }
       } else {
@@ -180,7 +180,7 @@ export class ServiceConnector {
       }
 
       return response.failed()
-    } catch {
+    } catch (e) {
       return response.error("unable to fetch response")
     }
   }
