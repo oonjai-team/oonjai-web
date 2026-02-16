@@ -1,38 +1,6 @@
 import { createEnv } from "@t3-oss/env-nextjs"
 import { z } from "zod"
 
-function testVersion(version: string): boolean {
-  if (/^[a-z0-9]+$/i.exec(version.substring(0, 2))) {
-    // Two operator
-    const op = version.substring(0, 2)
-    switch (op) {
-      case "==":
-        return true
-      case ">=":
-        return true
-      case "<=":
-        return true
-      case "=<":
-        return true
-      case "=>":
-        return true
-    }
-  } else {
-    // One operator
-    const op = version.substring(0, 1)
-    switch (op) {
-      case "=":
-        return true
-      case ">":
-        return true
-      case "<":
-        return true
-    }
-  }
-
-  return false
-}
-
 export const env = createEnv({
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -1,10 +1,4 @@
-enum Operator {
-  GT = 1,
-  LT = 2,
-  GTE = 3,
-  LTE = 4,
-  EQ = 5,
-}
+enum Operator {}
 
 export class VersionNumber {
   public vtext: string
