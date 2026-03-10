@@ -34,6 +34,19 @@ We have a predefined color palette in `src/app/globals.css`. Please use these Ta
 2.  **Open a Pull Request (PR)**: Always create a new branch for your feature and open a PR for review.
 3.  **Review & Refactor**: Once your PR is submitted, I will review the code and perform any necessary refactoring to ensure every feature works with each other.
 
+### Example Pull Request
+
+To see how we implement these guidelines in practice, please review our reference PR:
+
+- **[Pull Request #6: Example Feature Implementation](https://github.com/oonjai-team/oonjai-web/pull/6)**
+
+This PR demonstrates:
+- Focused development on a single feature.
+- All files contained within a single directory (`src/app/example/`).
+- Proper use of Tailwind color variables and Framer Motion.
+- Clear commit messages following the Conventional Commits standard.
+
+
 ### Commit Standards
 
 We use **Husky** and **Commitlint** to ensure high code quality. Please follow the Conventional Commits format:
