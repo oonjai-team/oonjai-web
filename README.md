@@ -2,6 +2,9 @@
 
 A high-performance frontend repository for **Oonjai**, built with **Next.js 15** and **Bun**.
 
+## (IMPORTANT!) For Contributors
+Please visit [Contributor Guide](/CONTRIBUTE.md)
+
 ---
 
 ## 🚀 Getting Started

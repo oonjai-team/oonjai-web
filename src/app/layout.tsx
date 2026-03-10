@@ -35,7 +35,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="antialiased selection:bg-blue-100 font-sans">
-        <Header />
         <main className="min-h-[calc(100vh-3.5rem)] bg-gray-50/50">
           {children}
         </main>
