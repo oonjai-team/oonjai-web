@@ -18,7 +18,10 @@ To maintain a smooth and efficient development process, please follow these guid
 
 - **Feature-by-Feature**: Focus on one feature at a time. This keeps our PRs manageable and easy to review.
 - **Scope Control**: Try your best **not to edit files outside the scope** of the feature you are working on. Avoid unnecessary changes to global styles, configurations, or other features.
-- **All-in-One Directory** *(Important)*: For now, keep all files related to your feature (components, hooks, types, etc.) in the **same directory**. Do not split them into separate folders like `components/` or `lib/`. A manager will handle the refactoring and organization after the PR is merged.
+- #### **All-in-One Directory** *(Important)*
+  For now, keep all files related to your feature (components, hooks, types, etc.) in the **same directory**. Do not split them into separate folders like `components/` or `lib/`. A manager will handle the refactoring and organization after the PR is merged.
+  
+### Example (please take a look): [/src/app/example](/src/app/example)
 
 ### Design System
 
@@ -39,6 +42,7 @@ We have a predefined color palette in `src/app/globals.css`. Please use these Ta
 To see how we implement these guidelines in practice, please review our reference PR:
 
 - **[Pull Request #6: Example Feature Implementation](https://github.com/oonjai-team/oonjai-web/pull/6)**
+- **[Source Code: Example Feature Implementation](/src/app/example)**
 
 This PR demonstrates:
 - Focused development on a single feature.
