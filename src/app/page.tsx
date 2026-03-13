@@ -1,6 +1,8 @@
 import HeroSection from "@/components/ui/landing/HeroSection";
 import Navbar from "@/components/ui/landing/Navbar";
 import ProblemSection from "@/components/ui/landing/ProblemSection";
+import FeaturesSection from "@/components/ui/landing/FeaturesSection";
+import { Feature } from "framer-motion";
 
 export default function Home() {
   return (
@@ -8,10 +10,7 @@ export default function Home() {
       <Navbar />
       <HeroSection />
       <ProblemSection />
-      <div className="min-h-screen w-full flex items-center justify-center">
-        <h1 className="text-4xl font-semibold">Hello Oonjai hi!</h1>
-        <h2 className="text-oonjai-blue-400 font-medium text-4xl">Text</h2>
-      </div>
+      <FeaturesSection />
     </>
   );
 }
