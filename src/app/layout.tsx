@@ -1,44 +1,28 @@
-import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { Header } from "@/components/ui/Header";
+import type { Metadata } from "next"
+import { Lexend } from "next/font/google"
+import "./globals.css"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const lexend = Lexend({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-lexend",
+})
 
 export const metadata: Metadata = {
-  title: "Oonjai Web",
-  description: "Scalable Mobile Web Application",
-};
-
-// Fixed: Moved outside the function to the top level
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: "cover", // Essential for "Notch" phones
-};
+  title: "Oonjai",
+  description: "Your Parents' Joy, Your Peace Of Mind",
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="antialiased selection:bg-blue-100 font-sans">
-        <main className="min-h-[calc(100vh-3.5rem)] bg-gray-50/50">
-          {children}
-        </main>
+    <html lang="en" className={lexend.variable}>
+      <body suppressHydrationWarning={true}>
+        {children}
       </body>
     </html>
-  );
+  )
 }
