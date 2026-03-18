@@ -12,7 +12,7 @@ To maintain a smooth and efficient development process, please follow these guid
 
 ### DTOs & Class Diagrams
 
-- **Standards**: Data Transfer Objects (DTOs) will be provided via class diagrams. Your client-side object should match these DTOs.
+- **Standards**: Data Transfer Objects (DTOs) will be provided in `src/dto`. Your client-side object should match these DTOs.
 
 ### Development Principles
 
