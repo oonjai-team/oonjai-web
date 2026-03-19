@@ -22,7 +22,8 @@
       "@/*": ["./src/*"],
       "@lib/*": ["./src/lib/*"],
       "@dto": ["./src/dto/index.ts"],
-      "@dto/*": ["./src/dto/*"]
+      "@dto/*": ["./src/dto/*"],
+      "@components/*": ["./src/components/*"]
     }
   },
   "include": [

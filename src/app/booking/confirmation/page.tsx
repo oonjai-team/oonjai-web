@@ -3,10 +3,10 @@ import Image from "next/image";
 import BookingSummaryCard from "@/components/ui/booking/BookingSummaryCard";
 
 // Importing pure DTOs
-import { ServiceType, BookingStatus } from "@/dto/enums";
-import { BookingDetailDTO } from "@/dto/booking.dto";
-import { ReviewDTO } from "@/dto";
-import Header from "@/components/ui/Header";
+import { ServiceType, BookingStatus } from "@dto/enums";
+import { BookingDetailDTO } from "@dto/booking.dto";
+import { ReviewDTO } from "@dto";
+import { Header } from "@components/common/Header";
 
 export default function BookingConfirmationPage() {
   
