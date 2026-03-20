@@ -8,12 +8,19 @@ import OJContinueButton from "../ui/OJContinueButton"
 interface Props { onNext: () => void }
 
 const MOBILITY_OPTIONS = [
-  "Independent", "Require a cane", "Wheelchair", "Bed Bound"
+  { label: "Independent", icon: "/images/onboarding/icons/independent.svg" },
+  { label: "Require a cane", icon: "/images/onboarding/icons/cane.svg" },
+  { label: "Wheelchair", icon: "/images/onboarding/icons/wheelchair.svg" },
+  { label: "Bed Bound", icon: "/images/onboarding/icons/bedbound.svg" },
 ]
+
 const CHRONIC_OPTIONS = [
-  "Cardiovascular Diseases", "Metabolic & Endocrine Disorders",
-  "Respiratory Diseases", "Musculoskeletal Conditions",
-  "Mental Health Conditions", "Neurological Conditions"
+  { label: "Cardiovascular Diseases", icon: "/images/onboarding/icons/heart.svg" },
+  { label: "Metabolic & Endocrine Disorders", icon: "/images/onboarding/icons/metabolic.svg" },
+  { label: "Respiratory Diseases", icon: "/images/onboarding/icons/Frame-2.svg" },
+  { label: "Musculoskeletal Conditions", icon: "/images/onboarding/icons/bone.svg" },
+  { label: "Mental Health Conditions", icon: "/images/onboarding/icons/mental.svg" },
+  { label: "Neurological Conditions", icon: "/images/onboarding/icons/brain.svg" },
 ]
 
 function ProfileInput({
@@ -47,11 +54,15 @@ function ProfileInput({
 function DropdownSelect({
   label, required, options, value, onChange, error
 }: {
-  label: string; required?: boolean; error?: string
-  options: string[]; value: string
+  label: string
+  required?: boolean
+  error?: string
+  options: { label: string; icon?: string }[]
+  value: string
   onChange: (v: string) => void
 }) {
   const [open, setOpen] = useState(false)
+  const selectedOption = options.find((o) => o.label === value)
 
   return (
     <div className="w-80 flex flex-col gap-1 relative">
@@ -68,11 +79,23 @@ function DropdownSelect({
         flex justify-between items-center gap-2.5 cursor-pointer
         transition-colors hover:outline-[#365C48]`}
       >
-        <span className={`text-sm font-light font-['Lexend'] ${
-          value ? "text-oonjai-green-500" : "text-[#b1b1b1]"
-        }`}>
-          {value || "Select..."}
-        </span>
+        <div className="flex items-center gap-3 min-w-0">
+          {selectedOption?.icon && (
+            <Image
+              src={selectedOption.icon}
+              alt={selectedOption.label}
+              width={20}
+              height={20}
+              className="shrink-0"
+            />
+          )}
+          <span className={`text-sm font-light font-['Lexend'] ${
+            value ? "text-oonjai-green-500" : "text-[#b1b1b1]"
+          }`}>
+            {value || "Select..."}
+          </span>
+        </div>
+
         <svg
           className={`w-4 h-4 text-oonjai-green-500 transition-transform
           ${open ? "rotate-180" : ""}`}
@@ -89,18 +112,30 @@ function DropdownSelect({
         outline-[#b1b1b1] overflow-hidden shadow-sm">
           {options.map(o => (
             <button
-              key={o}
+              key={o.label}
               type="button"
-              onClick={() => { onChange(o); setOpen(false) }}
-              className={`w-full h-9 px-7 py-1 text-left
+              onClick={() => { onChange(o.label); setOpen(false) }}
+              className={`w-full min-h-[44px] px-4 py-3 text-left
               text-oonjai-green-500 text-sm font-light font-['Lexend']
               flex items-center justify-between
               outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
               hover:bg-oonjai-green-50 transition-colors cursor-pointer
-              ${value === o ? "bg-oonjai-green-50" : "bg-white"}`}
+              ${value === o.label ? "bg-oonjai-green-50" : "bg-white"}`}
             >
-              <span>{o}</span>
-              {value === o && (
+              <div className="flex items-center gap-4">
+                {o.icon && (
+                  <Image
+                    src={o.icon}
+                    alt={o.label}
+                    width={20}
+                    height={20}
+                    className="shrink-0"
+                  />
+                )}
+                <span>{o.label}</span>
+              </div>
+
+              {value === o.label && (
                 <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3">
                   <path d="M2 6l3 3 5-5" stroke="#365C48"
                   strokeWidth="1.5" strokeLinecap="round"
@@ -189,8 +224,8 @@ export default function SeniorProfileStep({ onNext }: Props) {
         <div className="w-full max-w-[600px] flex flex-col gap-3">
 
           <h2 className="w-full text-center
-          text-oonjai-green-500 text-4xl font-medium font-['Lexend']">
-            Set Up Your Senior Profile
+          text-oonjai-green-500 text-3xl font-medium font-['Lexend']">
+            Set Up Your<br />Senior Profile
           </h2>
 
           {/* Saved seniors list */}
@@ -275,7 +310,7 @@ export default function SeniorProfileStep({ onNext }: Props) {
           <div className="flex justify-between items-start gap-4">
             <div className="flex-1">
               <ProfileInput
-                label="Nick Name"
+                label="Nickname"
                 placeholder=""
                 value={form.nickName}
                 onChange={e => set("nickName", e.target.value)}

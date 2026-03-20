@@ -30,10 +30,9 @@ export default function PhoneStep({ onNext }: Props) {
       {/* Content */}
       <div className="flex flex-col gap-7 min-h-[557px]">
         <div className="flex flex-col gap-1">
-          <h2 className="text-oonjai-green-500 text-4xl
-          font-medium font-['Lexend']">
+          <div class="self-stretch justify-start text-oonjai-green-500 text-xl font-medium font-['Lexend']">
             What&apos;s Your Phone Number?
-          </h2>
+          </div>
           <p className="text-DarkGrey text-sm font-medium font-['Lexend']">
             *Senior&apos;s emergency primary contact
           </p>
