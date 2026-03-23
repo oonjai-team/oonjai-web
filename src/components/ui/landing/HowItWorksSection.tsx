@@ -24,7 +24,7 @@ export default function HowItWorksSection() {
         
         {/* Section Heading */}
         <div className="text-center">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-PrimaryGreen leading-tight">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-medium tracking-wide text-PrimaryGreen leading-tight">
             You handle the booking.<br />
             They handle the fun.
           </h2>
