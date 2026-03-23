@@ -28,9 +28,9 @@ export default function PhoneStep({ onNext }: Props) {
       illustrationPos="left-[750px] bottom-[0px]"
     >
       {/* Content */}
-      <div className="flex flex-col gap-7 min-h-[557px]">
+      <div className="flex flex-col gap-7 mb-6 sm:min-h-[557px]">
         <div className="flex flex-col gap-1">
-          <div class="self-stretch justify-start text-oonjai-green-500 text-xl font-medium font-['Lexend']">
+          <div className="self-stretch justify-start text-oonjai-green-500 text-2xl sm:text-4xl font-medium font-['Lexend']">
             What&apos;s Your Phone Number?
           </div>
           <p className="text-DarkGrey text-sm font-medium font-['Lexend']">

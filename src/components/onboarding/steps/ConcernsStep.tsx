@@ -29,7 +29,7 @@ export default function ConcernsStep({ onNext }: Props) {
     >
       <div className="flex flex-col gap-7 min-h-[557px]">
         <h2 className="w-full max-w-[564px] text-oonjai-green-500
-        text-4xl font-medium font-['Lexend']">
+        text-2xl sm:text-4xl font-medium font-['Lexend']">
           What&apos;s Your Main Concern When The Senior Is Alone?
         </h2>
 
@@ -74,7 +74,7 @@ export default function ConcernsStep({ onNext }: Props) {
               </div>
 
               <span className="text-center text-oonjai-green-500
-              text-base font-normal font-['Lexend'] w-full max-w-[125px]">
+              text-base font-medium font-['Lexend'] w-full max-w-[125px]">
                 {o.label}
               </span>
             </button>

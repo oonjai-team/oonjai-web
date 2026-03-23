@@ -32,7 +32,7 @@ export default function RelationshipStep({ onNext }: Props) {
     >
       <div className="flex flex-col gap-7 min-h-[557px]">
         <h2 className="w-full max-w-[564px] text-oonjai-green-500
-        text-4xl font-medium font-['Lexend']">
+        text-2xl sm:text-4xl font-medium font-['Lexend']">
           What&apos;s Your Relationship With The Senior?
         </h2>
 
@@ -59,7 +59,7 @@ export default function RelationshipStep({ onNext }: Props) {
                 height={o.h}
                 className="object-contain"
               />
-              <span className="text-center text-oonjai-green-500 text-2xl
+              <span className="text-center text-oonjai-green-500 text-xl sm:text-2xl
               font-medium font-['Lexend']">
                 {o.label}
               </span>

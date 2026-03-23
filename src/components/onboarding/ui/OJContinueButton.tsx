@@ -1,6 +1,6 @@
 export default function OJContinueButton({
   label = "Continue", onClick, disabled, loading
-}: Props) {
+}: {label?: string, onClick: () => void, disabled?: boolean, loading?: boolean}) {
   return (
     <div className="w-full flex justify-center">
       <button

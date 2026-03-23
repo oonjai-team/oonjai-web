@@ -65,7 +65,7 @@ function DropdownSelect({
   const selectedOption = options.find((o) => o.label === value)
 
   return (
-    <div className="w-80 flex flex-col gap-1 relative">
+    <div className="w-full flex flex-col gap-1 relative">
       <label className="text-oonjai-green-500 text-base
       font-light font-['Lexend']">
         {label}{required && " *"}
@@ -73,7 +73,7 @@ function DropdownSelect({
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`w-80 h-9 pl-5 pr-3 py-5 bg-white rounded
+        className={`w-full sm:w-6/8 h-9 pl-5 pr-3 py-5 bg-white rounded
         outline outline-1 outline-offset-[-1px]
         ${error ? "outline-[#CF4538]" : "outline-[#b1b1b1]"}
         flex justify-between items-center gap-2.5 cursor-pointer
@@ -225,7 +225,7 @@ export default function SeniorProfileStep({ onNext }: Props) {
 
           <h2 className="w-full text-center
           text-oonjai-green-500 text-3xl font-medium font-['Lexend']">
-            Set Up Your<br />Senior Profile
+            Set Up Your<br className="sm:hidden block"/> Senior Profile
           </h2>
 
           {/* Saved seniors list */}
@@ -354,7 +354,7 @@ export default function SeniorProfileStep({ onNext }: Props) {
             { key: "emergencyNo",  label: "Second Emergency Number",    full: true  },
             { key: "hospital",     label: "Preferred Hospital",         full: true  },
           ].map(f => (
-            <div key={f.key} className={f.full ? "w-full" : "w-80"}>
+            <div key={f.key} className={f.full ? "w-full" : "w-full sm:w-6/8"}>
               <ProfileInput
                 label={f.label}
                 placeholder=""
@@ -365,14 +365,14 @@ export default function SeniorProfileStep({ onNext }: Props) {
           ))}
 
           {/* Location */}
-          <div className="w-80 flex flex-col gap-1 mb-4">
+          <div className="w-full flex flex-col gap-1 mb-4">
             <label className="text-oonjai-green-500 text-base
             font-light font-['Lexend']">Location</label>
 
             <button
               type="button"
               onClick={() => setShowMap(m => !m)}
-              className="w-80 h-9 pl-5 pr-3 py-5 bg-white rounded
+              className="w-full h-9 pl-5 pr-3 py-5 bg-white rounded
               outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
               flex justify-between items-center cursor-pointer
               hover:outline-[#365C48] transition-colors"
@@ -390,7 +390,7 @@ export default function SeniorProfileStep({ onNext }: Props) {
             </button>
 
             {showMap && (
-              <div className="w-80 h-56 px-7 py-5 bg-white rounded
+              <div className="w-full h-56 px-7 py-5 bg-white rounded
               outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
               flex flex-col gap-2.5">
                 <div className="px-3 py-1 rounded
