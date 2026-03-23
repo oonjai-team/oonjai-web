@@ -2,12 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Header, 
-  EmptyState, 
-  ActiveRequestCard, 
-  ServiceTypeCard 
-} from './components';
-import { 
   ClipboardList, 
   Plus, 
   ChevronLeft, 
@@ -17,6 +11,9 @@ import {
   Search, 
   MapPin 
 } from 'lucide-react';
+import {EmptyState} from "@components/booking/request/EmptyStateCard"
+import {ActiveRequestCard} from "@components/booking/request/ActiveRequestCard"
+import {ServiceTypeCard} from "@components/booking/request/ServiceTypeCard"
 
 export default function RequestServicePage() {
   const [view, setView] = useState<'list' | 'form'>('list');
@@ -95,8 +92,6 @@ export default function RequestServicePage() {
 
   return (
     <div className="min-h-screen bg-[#FCFAEF] font-sans text-gray-900 pb-20 selection:bg-teal-200">
-      <Header />
-
       <main className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-10">
         
         {view === 'list' ? (

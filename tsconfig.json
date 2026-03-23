@@ -19,7 +19,6 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
       "@lib/*": ["./src/lib/*"],
       "@dto": ["./src/dto/index.ts"],
       "@dto/*": ["./src/dto/*"],

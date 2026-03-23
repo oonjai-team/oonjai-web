@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { BookingDetailDTO } from "@/dto/booking.dto"; 
+import { BookingDetailDTO } from "@dto/booking.dto"; 
 
 interface BookingSummaryProps {
   booking: BookingDetailDTO;

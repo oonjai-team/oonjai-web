@@ -1,11 +1,11 @@
 // src/app/onboarding/page.tsx
 "use client"
 import { useState } from "react"
-import PhoneStep        from "@/components/onboarding/steps/PhoneStep"
-import RelationshipStep from "@/components/onboarding/steps/RelationshipStep"
-import GoalStep         from "@/components/onboarding/steps/GoalStep"
-import ConcernsStep     from "@/components/onboarding/steps/ConcernsStep"
-import SeniorProfileStep from "@/components/onboarding/steps/SeniorProfileStep"
+import PhoneStep        from "@components/onboarding/steps/PhoneStep"
+import RelationshipStep from "@components/onboarding/steps/RelationshipStep"
+import GoalStep         from "@components/onboarding/steps/GoalStep"
+import ConcernsStep     from "@components/onboarding/steps/ConcernsStep"
+import SeniorProfileStep from "@components/onboarding/steps/SeniorProfileStep"
 
 const STEPS = ["phone", "relationship", "goal", "concerns", "senior-profile"] as const
 type Step = typeof STEPS[number]
