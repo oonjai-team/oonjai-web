@@ -4,7 +4,7 @@ import Image from "next/image";
 
 export default function Navbar() {
   return (
-    <nav className="sticky top-0 z-50 w-full bg-PrimaryCream backdrop-blur-md border-b border-lightGrey/30">
+    <nav className="sticky top-0 z-50 w-full bg-PrimaryCream border-b border-lightGrey/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 md:h-20">
           
@@ -25,7 +25,7 @@ export default function Navbar() {
           {/* Action Side - Single Button */}
           <div className="flex items-center">
             <Link 
-              href="/get-started" // You can change this routing path to match your actual auth/onboarding page
+              href="/auth" // You can change this routing path to match your actual auth/onboarding page
               className="bg-PrimaryGreen text-white px-4 py-2 md:px-6 md:py-2.5 text-sm md:text-base font-medium rounded-md shadow-sm hover:bg-oonjai-green-600 transition-colors"
             >
               Get Started

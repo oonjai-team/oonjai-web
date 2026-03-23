@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={lexend.variable}>
-      <body suppressHydrationWarning={true}>
+      <body className="min-h-dvh" suppressHydrationWarning={true}>
         {children}
       </body>
     </html>
