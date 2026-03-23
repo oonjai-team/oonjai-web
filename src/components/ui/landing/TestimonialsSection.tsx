@@ -25,33 +25,35 @@ export default function TestimonialsSection() {
         {/* Top Centered Heading */}
         <div className="text-center">
           <h2 className="text-3xl md:text-4xl lg:text-5xl text-PrimaryCream font-light leading-tight">
-            Read reviews,<br className="md:hidden" />
+            Read reviews,<br className="" />
             <span className="font-bold"> Join with Confidence</span>
           </h2>
         </div>
 
         {/* Bottom Split Layout */}
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
+        <div className="flex flex-col sm:flex-row gap-8 sm:gap-12 items-start">
           
           {/* Left Side: Quote & Title */}
-          <div className="w-full lg:w-1/4 flex flex-col items-center lg:items-start text-center lg:text-left">
+          <div className="shrink-0 hidden sm:flex flex-col items-end text-left">
             {/* Using a stylized text quote here so you don't have to export another SVG! */}
-            <span className="text-7xl md:text-8xl text-PrimaryCream opacity-80 font-serif leading-none h-16 md:h-20">
+            <div className="flex flex-col items-start">
+              <span className="text-7xl md:text-8xl text-PrimaryCream opacity-80 font-extrabold h-12">
               “
             </span>
-            <p className="text-xl md:text-2xl text-PrimaryCream font-bold mt-2 leading-snug">
-              What our customers<br className="hidden lg:block" /> are saying
-            </p>
+              <p className="text-xl md:text-2xl text-PrimaryCream font-medium mt-2 leading-snug">
+                What our <br className="" />customers<br className="" /> are saying
+              </p>
+            </div>
           </div>
 
           {/* Right Side: The Review Cards Grid */}
-          <div className="w-full lg:w-3/4 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          <div className="w-full overflow-x-auto flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
             {reviews.map((review, index) => (
               <div 
                 key={index}
-                className="bg-white rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-lg h-full"
+                className="bg-white min-w-69.5 rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-lg h-full"
               >
-                <p className="text-sm md:text-base text-PrimaryGreen leading-relaxed font-medium mb-6">
+                <p className="text-sm md:text-base text-PrimaryGreen leading-5 font-medium mb-6">
                   {review.text}
                 </p>
                 <p className="text-sm font-bold text-PrimaryGreen mt-auto">

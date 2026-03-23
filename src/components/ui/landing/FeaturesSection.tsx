@@ -27,13 +27,13 @@ export default function FeaturesSection() {
         
         {/* Section Header */}
         <div className="text-left">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-PrimaryCream leading-tight mb-4">
+          <h2 className="text-4xl lg:text-5xl text-PrimaryCream leading-tight mb-4">
             More than a driver.<br />
             A trusted friend.
           </h2>
           {/* Using &apos; to prevent the linting error we just learned about! */}
-          <p className="text-base md:text-lg text-PrimaryCream/80 font-medium">
-            We don&apos;t just pick them up. We engage, protect, and care.
+          <p className="text-base md:text-lg text-PrimaryCream/80">
+            We don&apos;t just pick them up.<br className="sm:hidden block" /> We engage, protect, and care.
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export default function FeaturesSection() {
               className="bg-PrimaryCream rounded-[2rem] p-8 flex flex-col items-center justify-center text-center shadow-lg hover:-translate-y-2 transition-transform duration-300"
             >
               {/* Icon Container */}
-              <div className="relative w-32 h-32 md:w-40 md:h-40 mb-6">
+              <div className="relative w-40 h-40 mb-6">
                 <Image 
                   src={feature.icon}
                   alt={feature.alt}
@@ -56,7 +56,7 @@ export default function FeaturesSection() {
               </div>
               
               {/* Card Title */}
-              <h3 className="text-lg md:text-xl font-bold text-PrimaryGreen leading-snug w-3/4">
+              <h3 className="text-xl text-PrimaryGreen leading-snug w-3/4">
                 {feature.title}
               </h3>
             </div>
