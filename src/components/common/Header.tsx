@@ -10,8 +10,8 @@ function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinks = [
-    { name: "Activity Marketplace", href: "/marketplace", icon: "/images/book-icon.svg" },
-    { name: "Request a Service", href: "/booking", icon: "/images/hand-request-icon.svg" },
+    { name: "Activity Marketplace", href: "/activities", icon: "/images/book-icon.svg" },
+    { name: "Request a Service", href: "/request-service", icon: "/images/hand-request-icon.svg" },
     { name: "My Status", href: "/status", icon: "/images/book-icon.svg" },
     { name: "Settings", href: "/settings", icon: "/images/setting-icon.svg" },
   ];

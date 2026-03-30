@@ -1,4 +1,5 @@
 "use client";
+/*
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { mockData, ExampleItemDTO } from "./schema";
@@ -58,4 +59,4 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default Page;*/
