@@ -11,7 +11,8 @@ interface ActivityDetail {
   title: string;
   price: number;
   images: string[];
-  date: string;
+  displayDate?: string;
+  date?: string;
   location: string;
   hostAvatar: string;
   host: string;
@@ -95,7 +96,7 @@ export default function ActivityBookingConfirmationPage() {
               <h3 className="font-bold text-gray-900 text-lg">{activity.title}</h3>
               <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2"/><path d="M16 2v4M8 2v4M3 10h18" strokeWidth="2" strokeLinecap="round"/></svg>
-                {activity.date}
+                {activity.displayDate || activity.date}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.69 2 6 4.69 6 8c0 5.25 6 13 6 13s6-7.75 6-13c0-3.31-2.69-6-6-6z" strokeWidth="2"/><circle cx="12" cy="8" r="2" strokeWidth="2"/></svg>

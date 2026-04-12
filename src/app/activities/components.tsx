@@ -145,19 +145,52 @@ export const PhotoGallery = ({ images }: { images: string[] }) => {
   );
 };
 
-export const FilterBar = () => {
+export interface FilterState {
+  search: string;
+  category: string | null;
+  location: string | null;
+  priceMin: number;
+  priceMax: number;
+}
+
+interface FilterBarProps {
+  onChange: (filters: FilterState) => void;
+}
+
+export const FilterBar = ({ onChange }: FilterBarProps) => {
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+    const [searchValue, setSearchValue] = useState('');
     const trackRef = useRef<HTMLDivElement>(null);
     const [draggingThumb, setDraggingThumb] = useState<'min' | 'max' | null>(null);
 
     const MAX_SLIDER_PRICE = 2000;
     const [priceRange, setPriceRange] = useState({ min: 0, max: MAX_SLIDER_PRICE });
 
+    const emitChange = useCallback((overrides?: Partial<{ search: string; category: string | null; location: string | null; priceMin: number; priceMax: number }>) => {
+      onChange({
+        search: overrides?.search ?? searchValue,
+        category: overrides?.category !== undefined ? overrides.category : selectedCategory,
+        location: overrides?.location !== undefined ? overrides.location : selectedLocation,
+        priceMin: overrides?.priceMin ?? priceRange.min,
+        priceMax: overrides?.priceMax ?? priceRange.max,
+      });
+    }, [onChange, searchValue, selectedCategory, selectedLocation, priceRange]);
+
     const toggleDropdown = (name: string) => setOpenDropdown(openDropdown === name ? null : name);
-    const handleCategorySelect = (cat: string) => { setSelectedCategory(cat); setOpenDropdown(null); };
-    const handleLocationSelect = (loc: string) => { setSelectedLocation(loc); setOpenDropdown(null); };
+    const handleCategorySelect = (cat: string) => {
+      const next = selectedCategory === cat ? null : cat;
+      setSelectedCategory(next);
+      setOpenDropdown(null);
+      emitChange({ category: next });
+    };
+    const handleLocationSelect = (loc: string) => {
+      const next = selectedLocation === loc ? null : loc;
+      setSelectedLocation(next);
+      setOpenDropdown(null);
+      emitChange({ location: next });
+    };
 
     useEffect(() => {
         const handlePointerMove = (e: PointerEvent) => {
@@ -183,6 +216,17 @@ export const FilterBar = () => {
     }, [draggingThumb]);
 
     const isPriceChanged = priceRange.min > 0 || priceRange.max < MAX_SLIDER_PRICE;
+    const hasActiveFilter = !!searchValue || !!selectedCategory || !!selectedLocation || isPriceChanged;
+
+    const handleReset = () => {
+      setSearchValue('');
+      setSelectedCategory(null);
+      setSelectedLocation(null);
+      setPriceRange({ min: 0, max: MAX_SLIDER_PRICE });
+      setOpenDropdown(null);
+      onChange({ search: '', category: null, location: null, priceMin: 0, priceMax: MAX_SLIDER_PRICE });
+    };
+
     const getFilterBtnClass = (name: string, isSelected: boolean) => `flex items-center justify-between w-full px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm border rounded-full md:rounded-lg transition-colors whitespace-nowrap ${openDropdown === name || isSelected ? 'bg-[#385C4B] text-white border-[#385C4B]' : 'bg-white text-gray-600 border-gray-300'}`;
 
     return (
@@ -191,12 +235,12 @@ export const FilterBar = () => {
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <svg className="w-4 h-4 text-[#385C4B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
-                <input type="text" className="w-full pl-10 pr-4 py-2 text-[#385C4B] border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#385C4B] bg-white text-sm" placeholder="Search activities, yoga, gardening..." />
+                <input type="text" value={searchValue} onChange={(e) => { setSearchValue(e.target.value); emitChange({ search: e.target.value }); }} className="w-full pl-10 pr-4 py-2 text-[#385C4B] border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#385C4B] bg-white text-sm" placeholder="Search activities, yoga, gardening..." />
             </div>
             <div className="flex gap-2 md:gap-4 w-full lg:w-auto">
                 {[{ id: 'category', label: selectedCategory || 'Category', items: ['Social Companion', 'Exercise', 'Food', 'Wellness', 'Religion'], onSelect: handleCategorySelect }, { id: 'location', label: selectedLocation || 'Location', items: ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Hua Hin'], onSelect: handleLocationSelect }].map((filter) => (
                     <div key={filter.id} className="flex-1 lg:flex-none relative">
-                        <button onClick={() => toggleDropdown(filter.id)} className={getFilterBtnClass(filter.id, !!selectedCategory)}>
+                        <button onClick={() => toggleDropdown(filter.id)} className={getFilterBtnClass(filter.id, filter.id === 'category' ? !!selectedCategory : !!selectedLocation)}>
                             <span className="truncate max-w-[80px] md:max-w-full">{filter.label}</span>
                             <ChevronLeft className={`w-3 h-3 md:w-4 md:h-4 ml-1 transition-transform -rotate-90 ${openDropdown === filter.id ? 'rotate-90' : ''}`} />
                         </button>
@@ -221,10 +265,18 @@ export const FilterBar = () => {
                                 ))}
                             </div>
                             <div className="relative h-1.5 bg-[#A8D0B8] rounded-full mx-2 mt-6 mb-4 select-none touch-none" ref={trackRef}><div className="absolute h-full bg-[#385C4B] rounded-full" style={{ left: `${(priceRange.min / MAX_SLIDER_PRICE) * 100}%`, right: `${100 - (priceRange.max / MAX_SLIDER_PRICE) * 100}%` }} />{['min', 'max'].map((type) => (<div key={type} className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-[#385C4B] rounded-full shadow z-10 ${draggingThumb === type ? 'cursor-grabbing scale-125' : 'cursor-grab'} transition-transform duration-100`} style={{ left: `calc(${(type === 'min' ? priceRange.min : priceRange.max) / MAX_SLIDER_PRICE * 100}% - 8px)` }} onPointerDown={(e) => { e.preventDefault(); setDraggingThumb(type as 'min' | 'max'); }} />))}</div>
-                            <div className="flex justify-end mt-4"><button onClick={() => setOpenDropdown(null)} className="text-xs text-[#385C4B] font-bold">Apply</button></div>
+                            <div className="flex justify-end mt-4"><button onClick={() => { setOpenDropdown(null); emitChange({ priceMin: priceRange.min, priceMax: priceRange.max }); }} className="text-xs text-[#385C4B] font-bold">Apply</button></div>
                         </div>
                     )}
                 </div>
+                {hasActiveFilter && (
+                  <button
+                    onClick={handleReset}
+                    className="flex-shrink-0 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-[#385C4B] font-semibold hover:text-red-600 transition-colors whitespace-nowrap"
+                  >
+                    Reset
+                  </button>
+                )}
             </div>
         </div>
     );
@@ -235,14 +287,16 @@ interface ActivityCardProps {
   title: string;
   category: string;
   host: string;
-  date: string;
+  displayDate: string;
   location: string;
   price: number;
-  spotsLeft: number;
+  participantCount: number;
+  maxPeople: number;
   imageUrl?: string;
 }
 
-export const ActivityCard = ({ id, title, category, host, date, location, price, spotsLeft, imageUrl }: ActivityCardProps) => {
+export const ActivityCard = ({ id, title, category, host, displayDate, location, price, participantCount, maxPeople, imageUrl }: ActivityCardProps) => {
+    const spotsLeft = Math.max(0, maxPeople - participantCount);
     const isFull = spotsLeft === 0;
     return (
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col w-full sm:w-[280px]">
@@ -253,7 +307,7 @@ export const ActivityCard = ({ id, title, category, host, date, location, price,
             <div className="p-4 flex flex-col flex-1">
                 <div className="flex items-center gap-1 text-[#385C4B] text-[10px] font-bold tracking-wider mb-2"><FileText className="w-3 h-3" /> {category.toUpperCase()}</div>
                 <h3 className="font-bold text-gray-900 text-lg mb-3">{title}</h3>
-                <div className="space-y-1.5 mb-6">{[{ Icon: User, text: `Hosted by ${host}` }, { Icon: CalendarIcon, text: date }, { Icon: MapPin, text: location }].map((item, i) => (<div key={i} className="flex items-center gap-2 text-xs text-gray-600"><item.Icon className="w-3.5 h-3.5" />{item.text}</div>))}</div>
+                <div className="space-y-1.5 mb-6">{[{ Icon: User, text: `Hosted by ${host}` }, { Icon: CalendarIcon, text: displayDate }, { Icon: MapPin, text: location }].map((item, i) => (<div key={i} className="flex items-center gap-2 text-xs text-gray-600"><item.Icon className="w-3.5 h-3.5" />{item.text}</div>))}</div>
                 <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4"><span className={`text-xs font-bold ${isFull ? 'text-[#E54D4D]' : 'text-[#E67E22]'}`}>{isFull ? 'FULL' : `${spotsLeft} SPOTS LEFT!`}</span><Link href={`/activities/${id}`}><button className={`px-4 py-1.5 rounded-full text-xs font-semibold ${isFull ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#385C4B] text-white'}`}>{isFull ? 'Waiting List' : 'View Activity'}</button></Link></div>
             </div>
         </div>
@@ -277,7 +331,7 @@ export const Accordion = ({ title, children, defaultOpen = false }: AccordionPro
 };
 
 import { fetchSeniors, createSenior, type SeniorProfile, type CreateSeniorPayload } from '@/lib/api/seniors';
-import { createActivityBooking } from '@/lib/api/activities';
+import { createActivityBooking, fetchSeniorConflicts } from '@/lib/api/activities';
 import { createCheckoutSession } from '@/lib/api/payments';
 
 interface BookingFormProps {
@@ -285,8 +339,10 @@ interface BookingFormProps {
     id: number | string;
     title: string;
     price: number;
+    participantCount: number;
+    maxPeople: number;
     images: string[];
-    date: string;
+    displayDate: string;
     location: string;
     hostAvatar: string;
     host: string;
@@ -301,6 +357,7 @@ const MOBILITY_OPTIONS = [
 ]
 
 export const BookingForm = ({ activity }: BookingFormProps) => {
+  const spotsLeft = Math.max(0, activity.maxPeople - activity.participantCount);
   const [seniors, setSeniors] = useState<SeniorProfile[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [seniorsLoading, setSeniorsLoading] = useState(true)
@@ -309,6 +366,8 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [bookedSeniorIds, setBookedSeniorIds] = useState<Set<string>>(new Set())
+  const [conflictSeniorIds, setConflictSeniorIds] = useState<Set<string>>(new Set())
 
   const [newFullName, setNewFullName] = useState('');
   const [newAge, setNewAge] = useState('');
@@ -317,16 +376,26 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetchSeniors().then(list => {
+    Promise.all([
+      fetchSeniors(),
+      fetchSeniorConflicts(String(activity.id)),
+    ]).then(([list, conflicts]) => {
       setSeniors(list)
+      setBookedSeniorIds(new Set(conflicts.alreadyBooked))
+      setConflictSeniorIds(new Set(conflicts.timeConflicts))
     }).finally(() => setSeniorsLoading(false))
-  }, [])
+  }, [activity.id])
 
   const toggleSenior = (id: string) => {
+    if (bookedSeniorIds.has(id) || conflictSeniorIds.has(id)) return
     setSelectedIds(prev => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        if (next.size >= spotsLeft) return prev // can't exceed available spots
+        next.add(id)
+      }
       return next
     })
   }
@@ -356,9 +425,16 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
     setAddLoading(false)
   }
 
+  const [checkoutError, setCheckoutError] = useState('');
+
   const handleCheckout = async () => {
     if (selectedIds.size === 0) return
+    if (selectedIds.size > spotsLeft) {
+      setCheckoutError(`Only ${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} available, but ${selectedIds.size} selected.`)
+      return
+    }
     setCheckoutLoading(true)
+    setCheckoutError('')
 
     // Step 1: Create booking(s) via BookingService (status: CREATED, not paid)
     const bookingResult = await createActivityBooking({
@@ -385,6 +461,8 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
         window.location.href = checkoutSession.checkoutUrl
         return
       }
+    } else {
+      setCheckoutError('Booking failed. The activity may be fully booked or not enough spots are available.')
     }
 
     setCheckoutLoading(false)
@@ -411,7 +489,7 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
           <div>
             <h3 className="font-bold text-gray-900 text-lg">{activity.title}</h3>
             <div className="text-xs text-gray-600 flex items-center gap-1.5 mt-1">
-              <CalendarIcon className="w-3 h-3" /> {activity.date}
+              <CalendarIcon className="w-3 h-3" /> {activity.displayDate}
             </div>
             <div className="text-xs text-gray-600 flex items-center gap-1.5 mt-1">
               <MapPin className="w-3 h-3" /> {activity.location}
@@ -427,37 +505,74 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
       </div>
 
       <div className="mb-8">
-        <h2 className="font-bold text-gray-900 mb-3 text-lg">Who is Participating?</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-gray-900 text-lg">Who is Participating?</h2>
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${selectedCount >= spotsLeft ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
+            {selectedCount} / {spotsLeft} spots
+          </span>
+        </div>
+        {selectedCount >= spotsLeft && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 mb-3 text-xs text-red-600 font-medium">
+            All available spots are selected. Remove a participant to add a different one.
+          </div>
+        )}
         {seniorsLoading ? (
           <div className="flex justify-center py-6">
             <div className="w-8 h-8 border-4 border-[#385C4B] border-opacity-20 border-t-[#385C4B] rounded-full animate-spin" />
           </div>
         ) : (
           <div className="space-y-3">
-            {seniors.map(s => (
+            {seniors.map(s => {
+              const isSelected = selectedIds.has(s.id)
+              const isBooked = bookedSeniorIds.has(s.id)
+              const hasConflict = conflictSeniorIds.has(s.id)
+              const isDisabled = isBooked || hasConflict
+              const isFull = !isSelected && !isDisabled && selectedIds.size >= spotsLeft
+              const isClickable = !isDisabled && !isFull
+
+              let statusLabel = ''
+              if (isBooked) statusLabel = 'Already booked'
+              else if (hasConflict) statusLabel = 'Time conflict'
+
+              return (
               <div
                 key={s.id}
-                onClick={() => toggleSenior(s.id)}
-                className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${selectedIds.has(s.id) ? 'border-[#385C4B] bg-[#F4F9F6]' : 'border-gray-200 bg-white'}`}
+                onClick={() => isClickable && toggleSenior(s.id)}
+                className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+                  isDisabled ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed' :
+                  isSelected ? 'border-[#385C4B] bg-[#F4F9F6] cursor-pointer' :
+                  isFull ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed' :
+                  'border-gray-200 bg-white cursor-pointer'
+                }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDisabled ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 text-gray-500'}`}>
                     <User className="w-4 h-4" />
                   </div>
                   <div>
                     <span className="block text-sm font-semibold text-gray-800">{s.fullname}</span>
                     <span className="block text-xs text-gray-500">{s.mobilityLevel}</span>
+                    {statusLabel && (
+                      <span className={`inline-block text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded ${isBooked ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                        {statusLabel}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div>
-                  {selectedIds.has(s.id) ? (
+                  {isDisabled ? (
+                    <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                      <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                    </div>
+                  ) : isSelected ? (
                     <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                   ) : (
                     <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>
                   )}
                 </div>
               </div>
-            ))}
+              )
+            })}
 
             {seniors.length === 0 && (
               <p className="text-sm text-gray-500 text-center py-4">No seniors added yet. Add one below to get started.</p>
@@ -692,6 +807,11 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
             </>
           )}
         </button>
+        {checkoutError && (
+          <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-xs text-red-600 font-medium text-center">
+            {checkoutError}
+          </div>
+        )}
       </div>
     </div>
   );

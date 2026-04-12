@@ -66,7 +66,7 @@ export default function RequestServicePage() {
     if (isAuthenticated) {
       loadData(); // eslint-disable-line react-hooks/set-state-in-effect
     }
-  }, [isAuthenticated, authLoading, router]);  
+  }, [isAuthenticated, authLoading, router]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {

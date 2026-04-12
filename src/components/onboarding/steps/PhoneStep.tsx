@@ -1,11 +1,16 @@
 // src/components/onboarding/steps/PhoneStep.tsx
 "use client"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { LogOut } from "lucide-react"
+import { useAuth } from "@/lib/auth/AuthContext"
 import OJContinueButton from "../ui/OJContinueButton"
 
 interface Props { onNext: (phone: string) => void }
 
 export default function PhoneStep({ onNext }: Props) {
+  const router = useRouter()
+  const { logout } = useAuth()
   const [phone, setPhone]   = useState("")
   const [error, setError]   = useState("")
 
@@ -15,6 +20,11 @@ export default function PhoneStep({ onNext }: Props) {
       setError("Enter a valid phone number."); return
     }
     onNext(phone)
+  }
+
+  const handleSwitchAccount = async () => {
+    await logout()
+    router.push("/auth/login")
   }
 
   return (
@@ -55,10 +65,20 @@ export default function PhoneStep({ onNext }: Props) {
         </div>
       </div>
 
-      <OJContinueButton
-        onClick={handleContinue}
-        disabled={!phone}
-      />
+      <div className="flex flex-col gap-3">
+        <OJContinueButton
+          onClick={handleContinue}
+          disabled={!phone}
+        />
+        <button
+          type="button"
+          onClick={handleSwitchAccount}
+          className="flex items-center justify-center gap-2 w-full py-3 text-sm font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
+        >
+          <LogOut size={16} />
+          Switch Account
+        </button>
+      </div>
     </>
   )
 }

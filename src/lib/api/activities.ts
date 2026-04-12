@@ -8,11 +8,12 @@ export interface ActivityData {
   host: string
   hostAvatar: string
   hostDescription: string
-  date: string
+  startDate: string
+  endDate: string
+  displayDate: string
   location: string
   price: number
   participantCount: number
-  spotsLeft: number
   duration: string
   maxPeople: number
   rating: number
@@ -54,6 +55,20 @@ export interface ActivityBookingResponse {
   transportFee: number
   totalAmount: number
   currency: string
+}
+
+export interface SeniorConflictsResponse {
+  alreadyBooked: string[]
+  timeConflicts: string[]
+}
+
+export async function fetchSeniorConflicts(activityId: string): Promise<SeniorConflictsResponse> {
+  const connector = getConnector()
+  const res = await connector.GET<SeniorConflictsResponse>(`activities/${activityId}/senior-conflicts`)
+  if (res.isSuccess() && res.payload) {
+    return res.payload
+  }
+  return { alreadyBooked: [], timeConflicts: [] }
 }
 
 export async function createActivityBooking(payload: BookActivityPayload): Promise<ActivityBookingResponse | null> {

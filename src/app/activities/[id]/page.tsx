@@ -50,6 +50,8 @@ export default function ActivityDetailsPage({ params }: { params: Promise<{ id: 
     )
   }
 
+  const spotsLeft = Math.max(0, activity.maxPeople - activity.participantCount);
+
   return (
     <div className="min-h-screen bg-[#FDF8F0] font-sans pb-16">
       <Header />
@@ -73,7 +75,7 @@ export default function ActivityDetailsPage({ params }: { params: Promise<{ id: 
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                {activity.date}
+                {activity.displayDate}
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">{activity.title}</h1>
@@ -151,18 +153,32 @@ export default function ActivityDetailsPage({ params }: { params: Promise<{ id: 
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3 text-sm text-gray-600">
                   <svg className="w-5 h-5 text-[#385C4B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                  {activity.date}
+                  {activity.displayDate}
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-600">
                   <svg className="w-5 h-5 text-[#385C4B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   {activity.location}
                 </div>
               </div>
-              <div className="bg-[#FFF8E6] rounded-lg p-3 mb-6 flex items-center gap-2 border border-[#FDE68A]">
-                <span className="text-xl">🔥</span>
-                <span className="text-sm font-bold text-[#B7791F]">{activity.spotsLeft} / {activity.maxPeople} spots left</span>
-              </div>
-              {isAuthenticated ? (
+              {spotsLeft > 0 ? (
+                <div className="bg-[#FFF8E6] rounded-lg p-3 mb-6 flex items-center gap-2 border border-[#FDE68A]">
+                  <span className="text-xl">🔥</span>
+                  <span className="text-sm font-bold text-[#B7791F]">{spotsLeft} / {activity.maxPeople} spots left</span>
+                </div>
+              ) : (
+                <div className="bg-red-50 rounded-lg p-3 mb-6 flex items-center gap-2 border border-red-200">
+                  <span className="text-xl">🚫</span>
+                  <span className="text-sm font-bold text-red-600">Fully Booked</span>
+                </div>
+              )}
+              {spotsLeft === 0 ? (
+                <button
+                  disabled
+                  className="w-full py-3 bg-gray-300 text-gray-500 font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  Fully Booked
+                </button>
+              ) : isAuthenticated ? (
                 <Link href={`/activities/${resolvedParams.id}/book`} className="block w-full">
                   <button className="w-full py-3 bg-[#385C4B] text-white font-bold rounded-xl hover:bg-[#2A4437] transition shadow-md flex items-center justify-center gap-2">
                     Book Activity
