@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   EmptyState,
   ActiveRequestCard,
@@ -13,13 +13,15 @@ import {
   BriefcaseMedical,
   Home,
   Sun,
-  Search,
-  MapPin
+  User,
+  AlertTriangle,
+  ChevronDown
 } from 'lucide-react';
+import LocationPicker from '@/components/common/LocationPicker';
 import { Header } from '@/components/common/Header';
 import { useRouter } from 'next/navigation';
 import { fetchBookings, type BookingResponse } from '@/lib/api/bookings';
-import { fetchSeniors, type SeniorProfile } from '@/lib/api/seniors';
+import { fetchSeniors, fetchSeniorServiceConflicts, type SeniorProfile } from '@/lib/api/seniors';
 import { useAuth } from '@/lib/auth/AuthContext';
 
 const SERVICE_TYPE_MAP: Record<string, string> = {
@@ -35,17 +37,31 @@ export default function RequestServicePage() {
   const [activeRequests, setActiveRequests] = useState<BookingResponse[]>([]);
   const [seniors, setSeniors] = useState<SeniorProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seniorConflicts, setSeniorConflicts] = useState<string[]>([]);
+  const [seniorDropdownOpen, setSeniorDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     startDate: '',
+    startHour: '09',
+    startMinute: '00',
     endDate: '',
+    endHour: '17',
+    endMinute: '00',
     location: '',
     seniorId: '',
     serviceType: 'Medical Escort',
     additionalInfo: ''
   });
 
-  const [inputValue, setInputValue] = useState('');
+  const hourOptions = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const minuteOptions = ['00', '15', '30', '45'];
+
+  // Combined ISO strings for downstream use (conflict checks, submission)
+  const combinedStartDate = formData.startDate
+    ? `${formData.startDate}T${formData.startHour}:${formData.startMinute}` : '';
+  const combinedEndDate = formData.endDate
+    ? `${formData.endDate}T${formData.endHour}:${formData.endMinute}` : '';
 
   const loadData = async () => {
     setLoading(true);
@@ -53,7 +69,7 @@ export default function RequestServicePage() {
       fetchBookings(),
       fetchSeniors(),
     ]);
-    setActiveRequests(bookingsData);
+    setActiveRequests(bookingsData.filter(b => b.serviceType !== 'activity'));
     setSeniors(seniorsData);
     setLoading(false);
   };
@@ -68,16 +84,54 @@ export default function RequestServicePage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  // Check senior conflicts when dates/times change — deselect senior if now conflicted
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      setFormData(prev => ({ ...prev, location: inputValue }));
-    }, 1000);
-    return () => clearTimeout(delayDebounceFn);
-  }, [inputValue]);
+    if (!combinedStartDate || !combinedEndDate) {
+      React.startTransition(() => setSeniorConflicts([]));
+      return;
+    }
+    let cancelled = false;
+    fetchSeniorServiceConflicts(combinedStartDate, combinedEndDate).then(conflicts => {
+      if (cancelled) return;
+      React.startTransition(() => {
+        setSeniorConflicts(conflicts);
+        // Auto-deselect senior if they became unavailable
+        setFormData(prev => {
+          if (prev.seniorId && conflicts.includes(prev.seniorId)) {
+            return { ...prev, seniorId: '' };
+          }
+          return prev;
+        });
+      });
+    });
+    return () => { cancelled = true; };
+  }, [combinedStartDate, combinedEndDate]);  
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setSeniorDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const selectedSenior = seniors.find(s => s.id === formData.seniorId);
+
+  const getAge = (dob: string) => {
+    const birth = new Date(dob);
+    if (isNaN(birth.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
+    return age > 0 && age < 150 ? age : null;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -87,8 +141,8 @@ export default function RequestServicePage() {
     const bookingRequest = {
       seniorId: formData.seniorId,
       serviceType: SERVICE_TYPE_MAP[formData.serviceType] || "medical_escort",
-      startDate: formData.startDate,
-      endDate: formData.endDate,
+      startDate: combinedStartDate,
+      endDate: combinedEndDate,
       location: formData.location,
       note: formData.additionalInfo,
     };
@@ -97,7 +151,7 @@ export default function RequestServicePage() {
     router.push("/booking");
   };
 
-  const isFormComplete = formData.startDate && formData.endDate && inputValue && formData.seniorId;
+  const isFormComplete = combinedStartDate && combinedEndDate && formData.location && formData.seniorId;
 
   if (authLoading || loading) {
     return (
@@ -137,10 +191,16 @@ export default function RequestServicePage() {
                     <ActiveRequestCard
                       key={req.id}
                       title={req.serviceType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      date={new Date(req.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                       time={new Date(req.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       status={req.status === 'created' ? 'WAITING CONFIRMATION' : req.status.toUpperCase()}
                       variant={req.status === 'created' ? 'orange' : 'white'}
+                      location={req.location}
                       notes={req.note}
+                      assignee={req.caretakerName ? {
+                        name: req.caretakerName,
+                        role: req.caretakerSpecialization?.split(',')[0]?.trim() || 'Professional Caretaker',
+                      } : undefined}
                     />
                   ))}
                 </div>
@@ -199,63 +259,90 @@ export default function RequestServicePage() {
                   <h3 className="text-xs font-bold text-[#3A5A40] uppercase tracking-widest mb-4">2. Logistics</h3>
                   <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-sm">
                     <div className="space-y-5">
+                      {/* Start Date & Time */}
                       <div>
-                        <label className="block text-xs font-bold text-gray-800 mb-2">Start Date & Start Time</label>
-                        <input
-                          required
-                          type="datetime-local"
-                          name="startDate"
-                          value={formData.startDate}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40]"
-                        />
+                        <label className="block text-xs font-bold text-gray-800 mb-2">Start Date & Time</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            required
+                            type="date"
+                            name="startDate"
+                            value={formData.startDate}
+                            onChange={handleChange}
+                            className="flex-1 min-w-0 border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40]"
+                          />
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <select
+                              name="startHour"
+                              value={formData.startHour}
+                              onChange={handleChange}
+                              className="w-[62px] border border-gray-300 rounded-xl py-3 px-2 text-sm font-medium text-center focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40] bg-white appearance-none cursor-pointer"
+                            >
+                              {hourOptions.map(h => (
+                                <option key={`sh-${h}`} value={h}>{h}</option>
+                              ))}
+                            </select>
+                            <span className="text-sm font-bold text-gray-400">:</span>
+                            <select
+                              name="startMinute"
+                              value={formData.startMinute}
+                              onChange={handleChange}
+                              className="w-[62px] border border-gray-300 rounded-xl py-3 px-2 text-sm font-medium text-center focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40] bg-white appearance-none cursor-pointer"
+                            >
+                              {minuteOptions.map(m => (
+                                <option key={`sm-${m}`} value={m}>{m}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
                       </div>
+
+                      {/* End Date & Time */}
                       <div>
-                        <label className="block text-xs font-bold text-gray-800 mb-2">End Date & End Time</label>
-                        <input
-                          required
-                          type="datetime-local"
-                          name="endDate"
-                          value={formData.endDate}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40]"
-                        />
+                        <label className="block text-xs font-bold text-gray-800 mb-2">End Date & Time</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            required
+                            type="date"
+                            name="endDate"
+                            value={formData.endDate}
+                            onChange={handleChange}
+                            className="flex-1 min-w-0 border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40]"
+                          />
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <select
+                              name="endHour"
+                              value={formData.endHour}
+                              onChange={handleChange}
+                              className="w-[62px] border border-gray-300 rounded-xl py-3 px-2 text-sm font-medium text-center focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40] bg-white appearance-none cursor-pointer"
+                            >
+                              {hourOptions.map(h => (
+                                <option key={`eh-${h}`} value={h}>{h}</option>
+                              ))}
+                            </select>
+                            <span className="text-sm font-bold text-gray-400">:</span>
+                            <select
+                              name="endMinute"
+                              value={formData.endMinute}
+                              onChange={handleChange}
+                              className="w-[62px] border border-gray-300 rounded-xl py-3 px-2 text-sm font-medium text-center focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40] bg-white appearance-none cursor-pointer"
+                            >
+                              {minuteOptions.map(m => (
+                                <option key={`em-${m}`} value={m}>{m}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-gray-800 mb-2">Location</label>
-                      <div className="relative mb-3">
-                        <input
-                          required
-                          type="text"
-                          placeholder="City, Country"
-                          value={inputValue}
-                          onChange={(e) => setInputValue(e.target.value)}
-                          className="w-full border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40]"
-                        />
-                        <Search size={18} className="absolute right-4 top-3 text-gray-400" />
-                      </div>
-
-                      <div className="h-40 bg-gray-100 rounded-xl border border-gray-200 relative overflow-hidden shadow-inner">
-                        {formData.location ? (
-                          <iframe
-                            key={formData.location}
-                            width="100%"
-                            height="100%"
-                            frameBorder="0"
-                            src={`https://www.openstreetmap.org/export/embed.html?layer=mapnik&q=${encodeURIComponent(formData.location)}`}
-                            className="grayscale-[0.2]"
-                          ></iframe>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-full bg-[#f8f8f8]">
-                            <MapPin size={28} className="text-[#3A5A40] opacity-20 mb-1" />
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center px-4">
-                              Awaiting location...
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                      <LocationPicker
+                        value={formData.location}
+                        onChange={(location) => {
+                          setFormData(prev => ({ ...prev, location }));
+                        }}
+                      />
                     </div>
                   </div>
                 </section>
@@ -264,20 +351,116 @@ export default function RequestServicePage() {
                   <h3 className="text-xs font-bold text-[#3A5A40] uppercase tracking-widest mb-4">3. Patient Information</h3>
                   <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-200 shadow-sm">
                     <label className="block text-xs font-bold text-gray-800 mb-2">Select Senior Profile</label>
-                    <select
-                      required
-                      name="seniorId"
-                      value={formData.seniorId}
-                      onChange={handleChange}
-                      className="w-full md:w-1/2 border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40] bg-white"
-                    >
-                      <option value="">Select a profile...</option>
-                      {seniors.map(senior => (
-                        <option key={senior.id} value={senior.id}>
-                          {senior.fullname}
-                        </option>
-                      ))}
-                    </select>
+
+                    {/* Custom Senior Dropdown */}
+                    <div ref={dropdownRef} className="relative w-full md:w-2/3">
+                      <button
+                        type="button"
+                        onClick={() => setSeniorDropdownOpen(o => !o)}
+                        className={`w-full border rounded-xl py-3 px-4 text-left flex items-center justify-between transition-all ${
+                          seniorDropdownOpen ? 'border-[#3A5A40] ring-1 ring-[#3A5A40]' : 'border-gray-300'
+                        } bg-white`}
+                      >
+                        {selectedSenior ? (
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-[#D3E6D6] rounded-full flex items-center justify-center flex-shrink-0">
+                              <User size={14} className="text-[#3A5A40]" />
+                            </div>
+                            <div>
+                              <span className="text-sm font-semibold text-gray-900">{selectedSenior.fullname}</span>
+                              {getAge(selectedSenior.dateOfBirth) && (
+                                <span className="text-xs text-gray-500 ml-2">({getAge(selectedSenior.dateOfBirth)} yrs)</span>
+                              )}
+                            </div>
+                            {seniorConflicts.includes(selectedSenior.id) && (
+                              <span className="ml-auto mr-2 px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-[10px] font-bold flex items-center gap-1">
+                                <AlertTriangle size={10} /> Busy
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">Select a senior profile...</span>
+                        )}
+                        <ChevronDown size={16} className={`text-gray-400 transition-transform flex-shrink-0 ${seniorDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {seniorDropdownOpen && (
+                        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto">
+                          {seniors.length === 0 ? (
+                            <div className="p-4 text-center text-sm text-gray-400">No senior profiles found</div>
+                          ) : (
+                            seniors.map(senior => {
+                              const hasConflict = seniorConflicts.includes(senior.id);
+                              const isSelected = formData.seniorId === senior.id;
+                              const age = getAge(senior.dateOfBirth);
+                              return (
+                                <button
+                                  key={senior.id}
+                                  type="button"
+                                  disabled={hasConflict}
+                                  onClick={() => {
+                                    if (!hasConflict) {
+                                      setFormData(prev => ({ ...prev, seniorId: senior.id }));
+                                      setSeniorDropdownOpen(false);
+                                    }
+                                  }}
+                                  className={`w-full px-4 py-3 flex items-start gap-3 text-left transition-colors border-b border-gray-50 last:border-0 ${
+                                    hasConflict
+                                      ? 'opacity-50 cursor-not-allowed bg-gray-50'
+                                      : isSelected
+                                        ? 'bg-[#EEF5F0]'
+                                        : 'hover:bg-gray-50 cursor-pointer'
+                                  }`}
+                                >
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                    isSelected ? 'bg-[#3A5A40] text-white' : 'bg-[#D3E6D6] text-[#3A5A40]'
+                                  }`}>
+                                    <User size={16} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-bold text-gray-900">{senior.fullname}</span>
+                                      {age && <span className="text-xs text-gray-400">{age} yrs</span>}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium">
+                                        {senior.mobilityLevel}
+                                      </span>
+                                      {senior.healthNote && (
+                                        <span className="text-[10px] text-gray-400 truncate max-w-[180px]">
+                                          {senior.healthNote}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {hasConflict && (
+                                    <span className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-bold flex-shrink-0 mt-1">
+                                      <AlertTriangle size={10} />
+                                      Unavailable
+                                    </span>
+                                  )}
+                                  {isSelected && !hasConflict && (
+                                    <svg className="w-5 h-5 text-[#3A5A40] flex-shrink-0 mt-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Hint when seniors are unavailable */}
+                    {seniorConflicts.length > 0 && (
+                      <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-2">
+                        <AlertTriangle size={14} className="text-orange-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-orange-700">
+                          Some seniors are unavailable for this time period due to existing bookings.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </section>
 

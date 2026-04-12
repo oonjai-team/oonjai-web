@@ -27,6 +27,20 @@ export async function fetchSeniors(): Promise<SeniorProfile[]> {
   return []
 }
 
+export async function fetchSeniorServiceConflicts(startDate: string, endDate: string): Promise<string[]> {
+  const connector = getConnector()
+  const res = await connector.GET<{ conflicts: string[] }>(
+    "bookings/senior-conflicts",
+    { startDate, endDate },
+    {},
+    true
+  )
+  if (res.isSuccess() && res.payload) {
+    return res.payload.conflicts
+  }
+  return []
+}
+
 export async function createSenior(payload: CreateSeniorPayload): Promise<SeniorProfile | null> {
   const connector = getConnector()
   const res = await connector.POST<SeniorProfile>("users/seniors", payload as unknown as Record<string, unknown>)

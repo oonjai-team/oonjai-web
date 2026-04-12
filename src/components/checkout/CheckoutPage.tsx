@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Header } from "@/components/common/Header"
 import { createBooking, type CreateBookingPayload } from "@/lib/api/bookings"
 import { initiatePayment } from "@/lib/api/payments"
@@ -104,10 +105,10 @@ function getCheckoutInitialData(): { caretaker: CaretakerListItem | null; reques
 }
 
 export default function CheckoutPage() {
+  const router = useRouter()
   const [payment, setPayment] = useState("qr_promptpay")
   const [loading, setLoading] = useState(false)
-  const [confirmed, setConfirmed] = useState(false)
-  const [bookingId, setBookingId] = useState("")
+  const [error, setError] = useState("")
   const [{ caretaker, request }] = useState(getCheckoutInitialData)
 
   const estimatedCost = caretaker && request
@@ -123,29 +124,62 @@ export default function CheckoutPage() {
     if (!caretaker || !request) return
 
     setLoading(true)
+    setError("")
 
-    const bookingPayload: CreateBookingPayload = {
-      seniorId: request.seniorId,
-      caretakerId: caretaker.id,
-      serviceType: request.serviceType as CreateBookingPayload["serviceType"],
-      startDate: request.startDate,
-      endDate: request.endDate,
-      location: request.location,
-      note: request.note,
-    }
+    try {
+      const bookingPayload: CreateBookingPayload = {
+        seniorId: request.seniorId,
+        caretakerId: caretaker.id,
+        serviceType: request.serviceType as CreateBookingPayload["serviceType"],
+        startDate: request.startDate,
+        endDate: request.endDate,
+        location: request.location,
+        note: request.note,
+      }
 
-    const booking = await createBooking(bookingPayload)
+      const booking = await createBooking(bookingPayload)
 
-    if (booking) {
-      setBookingId(booking.id)
-      await initiatePayment(booking.id, {
+      if (!booking) {
+        setError("Failed to create booking. Please try again.")
+        setLoading(false)
+        return
+      }
+
+      const paymentResult = await initiatePayment(booking.id, {
         method: payment as "qr_promptpay" | "credit_card",
         amount: booking.estimatedCost,
         currency: booking.currency || "THB",
       })
+
+      if (!paymentResult) {
+        setError("Booking created but payment initiation failed. Please try again from your bookings page.")
+        setLoading(false)
+        return
+      }
+
+      // Store completed booking data for confirmation page
+      sessionStorage.setItem("completedBooking", JSON.stringify({
+        bookingId: booking.id,
+        serviceType: request.serviceType,
+        startDate: request.startDate,
+        endDate: request.endDate,
+        location: request.location,
+        note: request.note,
+        estimatedCost: booking.estimatedCost,
+        currency: booking.currency || "THB",
+        caretaker: {
+          name: `${caretaker.firstname} ${caretaker.lastname}`,
+          rating: caretaker.rating,
+          reviewCount: caretaker.reviewCount,
+          specialization: caretaker.specialization,
+        },
+      }))
+
       sessionStorage.removeItem("selectedCaretaker")
       sessionStorage.removeItem("pendingBookingRequest")
-      setConfirmed(true)
+      router.push("/booking/confirmation")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.")
     }
 
     setLoading(false)
@@ -169,114 +203,6 @@ export default function CheckoutPage() {
 
   const caretakerName = `${caretaker.firstname} ${caretaker.lastname}`
   const serviceTypeLabel = request.serviceType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-
-  // Confirmation screen
-  if (confirmed) {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-[#FFFAEF] px-4 sm:px-8 lg:px-64 py-12">
-          <div className="flex flex-col items-center gap-4 mb-10">
-            <div className="w-20 h-20 bg-oonjai-sec-green-100 rounded-full flex items-center justify-center">
-              <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-oonjai-green-500">
-                <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <h1 className="text-[#0E211A] text-3xl lg:text-4xl font-bold font-['Lexend'] text-center">
-              Service Successfully Booked!
-            </h1>
-            <p className="text-[#4D4D4D] text-base font-light font-['Lexend'] text-center">
-              Your caretaker has been notified and the schedule is confirmed.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-[0px_4px_16px_0px_rgba(0,0,0,0.08)] overflow-hidden mb-8">
-            <div className="px-8 py-5 flex justify-between items-start border-b border-[#EBF1ED]">
-              <div>
-                <p className="text-[#4D4D4D] text-xs font-semibold font-['Lexend'] uppercase tracking-widest mb-1">Confirmed Details</p>
-                <h2 className="text-[#0E211A] text-xl font-bold font-['Lexend']">Booking Summary</h2>
-              </div>
-              <div className="text-right">
-                <p className="text-[#4D4D4D] text-xs font-normal font-['Lexend'] uppercase tracking-widest mb-1">Booking ID</p>
-                <p className="text-[#0E211A] text-base font-normal font-['Lexend']">#{bookingId.slice(0, 8)}</p>
-              </div>
-            </div>
-
-            <div className="px-8 py-6 flex flex-col sm:flex-row items-start gap-8 border-b border-[#EBF1ED]">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl bg-[#b1b1b1] overflow-hidden flex-shrink-0">
-                  <Image src="/images/caretakers/caretaker-profile.png" alt={caretakerName} width={64} height={64} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <p className="text-[#4D4D4D] text-xs font-normal font-['Lexend'] mb-0.5">Caretaker</p>
-                  <p className="text-[#0E211A] text-lg font-bold font-['Lexend']">{caretakerName}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <StarIcon />
-                    <span className="text-[#4D4D4D] text-sm font-normal font-['Lexend']">
-                      {caretaker.rating?.toFixed(1) || "N/A"} ({caretaker.reviewCount || 0} reviews)
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:ml-auto">
-                <div className="flex items-start gap-3">
-                  <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-[#4D4D4D] flex-shrink-0 mt-0.5">
-                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  <div>
-                    <p className="text-[#4D4D4D] text-xs font-normal font-['Lexend']">Scheduled Date</p>
-                    <p className="text-[#0E211A] text-sm font-bold font-['Lexend']">
-                      {new Date(request.startDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-[#4D4D4D] flex-shrink-0 mt-0.5">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  <div>
-                    <p className="text-[#4D4D4D] text-xs font-normal font-['Lexend']">Service Hours</p>
-                    <p className="text-[#0E211A] text-sm font-bold font-['Lexend']">
-                      {new Date(request.startDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - {new Date(request.endDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="px-8 py-5 bg-[#EBF1ED] grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <p className="text-[#4D4D4D] text-xs font-semibold font-['Lexend'] uppercase tracking-widest mb-1">Service Type</p>
-                <p className="text-[#0E211A] text-sm font-normal font-['Lexend']">{serviceTypeLabel}</p>
-              </div>
-              <div>
-                <p className="text-[#4D4D4D] text-xs font-semibold font-['Lexend'] uppercase tracking-widest mb-1">Location</p>
-                <p className="text-[#0E211A] text-sm font-normal font-['Lexend']">{request.location}</p>
-              </div>
-              <div>
-                <p className="text-[#4D4D4D] text-xs font-semibold font-['Lexend'] uppercase tracking-widest mb-1">Estimated Total</p>
-                <p className="text-[#0E211A] text-sm font-normal font-['Lexend']">&#3647;{estimatedCost}.00</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 mb-10">
-            <Link href="/activities"
-              className="flex items-center justify-center gap-2 px-8 h-14 bg-oonjai-green-500 rounded-xl text-white text-base font-normal font-['Lexend'] hover:bg-oonjai-green-600 transition-colors cursor-pointer w-full sm:w-auto">
-              Return to Dashboard
-            </Link>
-            <button onClick={() => window.print()}
-              className="flex items-center justify-center gap-2 px-8 h-14 bg-white rounded-xl text-[#0E211A] text-base font-normal font-['Lexend'] outline outline-1 outline-[#b1b1b1] hover:outline-oonjai-green-300 transition-colors cursor-pointer w-full sm:w-auto">
-              Print Receipt
-            </button>
-          </div>
-        </div>
-      </>
-    )
-  }
 
   // Main checkout layout
   return (
@@ -418,6 +344,17 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <p className="text-red-700 text-sm font-['Lexend']">{error}</p>
+          </div>
+        )}
 
         {/* Checkout button */}
         <div className="sticky bottom-4 lg:static mt-4 lg:mt-0">

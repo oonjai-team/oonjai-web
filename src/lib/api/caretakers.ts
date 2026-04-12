@@ -17,10 +17,12 @@ export interface CaretakerListItem {
 
 export interface CaretakerFilters {
   serviceType?: string
+  startDate?: string
+  endDate?: string
   specialization?: string
   minRating?: string
   minExperience?: string
-  maxPrice?: string
+  maxHourlyRate?: string
 }
 
 export async function fetchCaretakers(filters?: CaretakerFilters): Promise<CaretakerListItem[]> {

@@ -24,6 +24,8 @@ export interface BookingResponse {
   estimatedCost: number
   currency: string
   createdAt: string
+  caretakerName?: string
+  caretakerSpecialization?: string
 }
 
 export async function createBooking(payload: CreateBookingPayload): Promise<BookingResponse | null> {

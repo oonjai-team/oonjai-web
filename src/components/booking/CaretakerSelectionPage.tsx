@@ -1,9 +1,8 @@
 "use client"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Header } from "@/components/common/Header"
 import { fetchCaretakers, type CaretakerListItem } from "@/lib/api/caretakers"
 
 const FILTERS = [
@@ -122,7 +121,17 @@ function CaretakerCard({ caretaker }: { caretaker: CaretakerListItem }) {
   )
 }
 
+interface PendingBookingRequest {
+  seniorId: string
+  serviceType: string
+  startDate: string
+  endDate: string
+  location: string
+  note: string
+}
+
 export default function CaretakerSelectionPage() {
+  const router = useRouter()
   const [caretakers, setCaretakers] = useState<CaretakerListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [sort, setSort] = useState("Recommended")
@@ -130,10 +139,28 @@ export default function CaretakerSelectionPage() {
   const [visible, setVisible] = useState(8)
   const [filterOpen, setFilterOpen] = useState(false)
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({})
+  const [bookingRequest, setBookingRequest] = useState<PendingBookingRequest | null>(null)
+
+  // Read pending booking request from sessionStorage on mount
+  useEffect(() => {
+    const stored = sessionStorage.getItem("pendingBookingRequest")
+    if (!stored) {
+      router.push("/request-service")
+      return
+    }
+    React.startTransition(() => setBookingRequest(JSON.parse(stored)))
+  }, [router])
 
   const loadCaretakers = async () => {
+    if (!bookingRequest) return
     setLoading(true)
-    const filters: Record<string, string> = {}
+
+    // Required params for backend GET /caretakers
+    const filters: Record<string, string> = {
+      serviceType: bookingRequest.serviceType,
+      startDate: bookingRequest.startDate,
+      endDate: bookingRequest.endDate,
+    }
 
     const skills = selectedFilters.skills || []
     if (skills.length > 0) filters.specialization = skills.join(",")
@@ -153,7 +180,7 @@ export default function CaretakerSelectionPage() {
     const price = selectedFilters.price || []
     if (price.length > 0) {
       const match = price[0].match(/(\d+)/)
-      if (match) filters.maxPrice = match[1]
+      if (match) filters.maxHourlyRate = match[1]
     }
 
     const data = await fetchCaretakers(filters)
@@ -162,8 +189,10 @@ export default function CaretakerSelectionPage() {
   }
 
   useEffect(() => {
-    loadCaretakers() // eslint-disable-line react-hooks/set-state-in-effect
-  }, [selectedFilters]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (bookingRequest) {
+      loadCaretakers() // eslint-disable-line react-hooks/set-state-in-effect
+    }
+  }, [selectedFilters, bookingRequest]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleFilterOption = (filterId: string, option: string) => {
     setSelectedFilters(prev => {
@@ -191,8 +220,6 @@ export default function CaretakerSelectionPage() {
 
   return (
     <>
-      <Header />
-
       <main className="min-h-screen bg-[#FFFAEF] px-4 sm:px-8 lg:px-16 py-8 lg:py-12">
 
         <Link href="/request-service"
@@ -210,6 +237,25 @@ export default function CaretakerSelectionPage() {
           <p className="text-[#4D4D4D] text-sm lg:text-base font-light font-['Lexend'] text-center">
             {loading ? "Loading caretakers..." : `We've found ${caretakers.length} caretakers matching your requirements.`}
           </p>
+          {bookingRequest && (
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+              <span className="px-3 py-1 bg-oonjai-green-50 text-oonjai-green-500 rounded-full text-xs font-medium font-['Lexend']">
+                {bookingRequest.serviceType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+              </span>
+              <span className="px-3 py-1 bg-gray-100 text-[#4D4D4D] rounded-full text-xs font-normal font-['Lexend']">
+                {new Date(bookingRequest.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                {" • "}
+                {new Date(bookingRequest.startDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {" - "}
+                {new Date(bookingRequest.endDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
+              {bookingRequest.location && (
+                <span className="px-3 py-1 bg-gray-100 text-[#4D4D4D] rounded-full text-xs font-normal font-['Lexend']">
+                  📍 {bookingRequest.location}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Filters + Sort */}
