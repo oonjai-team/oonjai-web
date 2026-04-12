@@ -2,10 +2,12 @@
 "use client"
 import { useState, useRef } from "react"
 import Image from "next/image"
-import OnboardingShell from "../OnboardingShell"
 import OJContinueButton from "../ui/OJContinueButton"
+import { submitOnboarding } from "@/lib/api/users"
+import { createSenior } from "@/lib/api/seniors"
+import type { OnboardingData } from "@/app/onboarding/page"
 
-interface Props { onNext: () => void }
+interface Props { onboardingData: OnboardingData; onNext: () => void }
 
 const MOBILITY_OPTIONS = [
   { label: "Independent", icon: "/images/onboarding/icons/independent.svg" },
@@ -153,7 +155,7 @@ function DropdownSelect({
   )
 }
 
-export default function SeniorProfileStep({ onNext }: Props) {
+export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
   const [photo, setPhoto]       = useState<string | null>(null)
   const [seniors, setSeniors]   = useState<Record<string, string>[]>([])
   const [form, setForm]         = useState({
@@ -181,11 +183,29 @@ export default function SeniorProfileStep({ onNext }: Props) {
     return e
   }
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
-    setTimeout(() => { setLoading(false); onNext() }, 1500)
+    try {
+      // 1. Submit onboarding data (phone, relationship, goal, concerns)
+      const onboardingOk = await submitOnboarding(onboardingData)
+      if (!onboardingOk) { setErrors({ fullName: "Failed to save onboarding data." }); setLoading(false); return }
+
+      // 2. Create senior profile
+      const senior = await createSenior({
+        fullname: form.fullName,
+        dateOfBirth: form.age,
+        mobilityLevel: form.mobility,
+        healthNote: [form.chronic, form.allergy, form.handicap, form.specialNeeds].filter(Boolean).join("; "),
+      })
+      if (!senior) { setErrors({ fullName: "Failed to create senior profile." }); setLoading(false); return }
+
+      onNext()
+    } catch {
+      setErrors({ fullName: "Something went wrong. Please try again." })
+      setLoading(false)
+    }
   }
 
   const handleAddAnother = () => {
@@ -209,14 +229,7 @@ export default function SeniorProfileStep({ onNext }: Props) {
   }
 
   return (
-    <OnboardingShell
-      step={5}
-      illustration=""
-      illustrationW={0}
-      illustrationH={0}
-      illustrationPos=""
-      centered={true}
-    >
+    <>
       {/* Outer — full width */}
       <div className="flex flex-col items-center gap-3 w-full">
 
@@ -448,6 +461,6 @@ export default function SeniorProfileStep({ onNext }: Props) {
         />
       </div>
 
-    </OnboardingShell>
+    </>
   )
 }

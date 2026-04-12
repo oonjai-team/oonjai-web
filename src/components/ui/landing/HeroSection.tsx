@@ -21,7 +21,7 @@ export default function HeroSection() {
           </p>
 
           <Link 
-            href="/solution"
+            href="/activities"
             className="bg-PrimaryGreen text-white sm:my-0 my-4 px-8 py-3 md:px-10 md:py-3 tracking-wide text-base md:text-lg rounded-lg shadow-md hover:bg-oonjai-green-600 transition-all transform hover:scale-105"
           >
             Find Your Solution

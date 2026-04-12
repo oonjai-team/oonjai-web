@@ -2,16 +2,15 @@
 "use client"
 import { useState } from "react"
 import Image from "next/image"
-import OnboardingShell from "../OnboardingShell"
 import OJContinueButton from "../ui/OJContinueButton"
 
-interface Props { onNext: () => void }
+interface Props { onNext: (relationship: string) => void }
 
 const OPTIONS = [
-  { id: "child",      label: "Child",       img: "/images/onboarding/rel-child.png",      w: 118, h: 135 },
-  { id: "grandchild", label: "Grand Child",  img: "/images/onboarding/rel-grandchild.png", w: 118, h: 135 },
-  { id: "sibling",    label: "Sibling",      img: "/images/onboarding/rel-sibling.png",    w: 118, h: 135 },
-  { id: "others",     label: "Others",       img: "/images/onboarding/rel-others.png",     w: 118, h: 135 },
+  { id: "child",      label: "Child",       img: "/images/onboarding/rel-child.png",      w: 90, h: 100 },
+  { id: "grandchild", label: "Grand Child",  img: "/images/onboarding/rel-grandchild.png", w: 90, h: 100 },
+  { id: "sibling",    label: "Sibling",      img: "/images/onboarding/rel-sibling.png",    w: 90, h: 100 },
+  { id: "others",     label: "Others",       img: "/images/onboarding/rel-others.png",     w: 90, h: 100 },
 ]
 
 export default function RelationshipStep({ onNext }: Props) {
@@ -20,17 +19,12 @@ export default function RelationshipStep({ onNext }: Props) {
 
   const handleContinue = () => {
     if (!selected) { setError("Please select your relationship."); return }
-    onNext()
+    onNext(selected)
   }
 
   return (
-    <OnboardingShell
-      step={2}
-      illustration="/images/onboarding/step2-illustrations.png"
-      illustrationW={690} illustrationH={775}
-      illustrationPos="right-[0px] top-[336px] bottom-[203px]"
-    >
-      <div className="flex flex-col gap-7 min-h-[557px]">
+    <>
+      <div className="flex flex-col gap-4">
         <h2 className="w-full max-w-[564px] text-oonjai-green-500
         text-2xl sm:text-4xl font-medium font-['Lexend']">
           What&apos;s Your Relationship With The Senior?
@@ -42,16 +36,15 @@ export default function RelationshipStep({ onNext }: Props) {
             <button
               key={o.id}
               onClick={() => { setSelected(o.id); setError("") }}
-              className={`px-6 py-3 bg-white rounded-lg
+              className={`px-4 py-2 bg-white rounded-lg
               outline outline-2 outline-offset-[-2px]
-              flex flex-col items-center gap-2 overflow-hidden
+              flex flex-col items-center justify-center gap-1
               transition-all duration-150 cursor-pointer
               ${selected === o.id
                 ? "outline-oonjai-green-500 bg-oonjai-green-50"
                 : "outline-lightGrey hover:outline-oonjai-green-300"
               }`}
             >
-              {/* Real image */}
               <Image
                 src={o.img}
                 alt={o.label}
@@ -59,7 +52,7 @@ export default function RelationshipStep({ onNext }: Props) {
                 height={o.h}
                 className="object-contain"
               />
-              <span className="text-center text-oonjai-green-500 text-xl sm:text-2xl
+              <span className="text-center text-oonjai-green-500 text-lg sm:text-xl
               font-medium font-['Lexend']">
                 {o.label}
               </span>
@@ -71,6 +64,6 @@ export default function RelationshipStep({ onNext }: Props) {
       </div>
 
       <OJContinueButton onClick={handleContinue} disabled={!selected} />
-    </OnboardingShell>
+    </>
   )
 }

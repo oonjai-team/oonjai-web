@@ -1,22 +1,38 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import SocialButton from "../_components/SocialButton";
 import AuthInput from "../_components/AuthInput";
 import AuthDivider from "../_components/AuthDivider";
 import GoogleIcon from "../_components/GoogleIcon";
 import LineIcon from "../_components/LineIcon";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login, oauthLogin, needsOnboarding } = useAuth();
   const [form, setForm] = useState<{ email: string; password: string }>({
     email: "",
     password: "",
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: implement login
+    setError("");
+    setLoading(true);
+
+    const result = await login(form.email, form.password);
+
+    if (result.success) {
+      router.push(needsOnboarding ? "/onboarding" : "/booking");
+    } else {
+      setError(result.error || "Login failed");
+    }
+    setLoading(false);
   }
 
   return (
@@ -29,13 +45,19 @@ export default function LoginPage() {
       </p>
 
       <div className="mt-6 space-y-4">
-        <SocialButton icon={<LineIcon />} label="Continue With Line" />
-        <SocialButton icon={<GoogleIcon />} label="Continue With Google" />
+        <SocialButton icon={<LineIcon />} label="Continue With Line" onClick={() => oauthLogin("line")} />
+        <SocialButton icon={<GoogleIcon />} label="Continue With Google" onClick={() => oauthLogin("google")} />
       </div>
 
       <div className="my-2.5">
         <AuthDivider />
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-4">
@@ -66,9 +88,10 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          className="mt-4 w-full rounded-[6px] bg-PrimaryGreen py-3 text-md font-medium text-white shadow-[0_8px_20px_rgba(54,92,72,0.18)] transition-colors hover:bg-oonjai-green-600"
+          disabled={loading}
+          className="mt-4 w-full rounded-[6px] bg-PrimaryGreen py-3 text-md font-medium text-white shadow-[0_8px_20px_rgba(54,92,72,0.18)] transition-colors hover:bg-oonjai-green-600 disabled:opacity-50"
         >
-          Log in
+          {loading ? "Logging in..." : "Log in"}
         </button>
       </form>
 

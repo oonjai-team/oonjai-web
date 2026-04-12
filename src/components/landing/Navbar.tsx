@@ -25,7 +25,7 @@ export default function Navbar() {
           {/* Action Side - Single Button */}
           <div className="flex items-center">
             <Link 
-              href="/auth" // You can change this routing path to match your actual auth/onboarding page
+              href="/auth/register"
               className="bg-PrimaryGreen text-white px-4 py-2 md:px-6 md:py-2.5 text-sm md:text-base font-medium rounded-md shadow-sm hover:bg-oonjai-green-600 transition-colors"
             >
               Get Started

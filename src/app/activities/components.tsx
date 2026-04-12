@@ -245,7 +245,7 @@ interface ActivityCardProps {
 export const ActivityCard = ({ id, title, category, host, date, location, price, spotsLeft, imageUrl }: ActivityCardProps) => {
     const isFull = spotsLeft === 0;
     return (
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col w-full">
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col w-full sm:w-[280px]">
             <div className="relative h-48 bg-gray-200">
                 {imageUrl ? <Image src={imageUrl} alt={title} fill unoptimized className="object-cover" /> : <div className="w-full h-full bg-[#82A895]" />}
                 <div className="absolute bottom-3 right-3 bg-white text-gray-900 text-xs font-bold px-3 py-1 rounded-full shadow-sm">฿{price}</div>
@@ -276,6 +276,10 @@ export const Accordion = ({ title, children, defaultOpen = false }: AccordionPro
     );
 };
 
+import { fetchSeniors, createSenior, type SeniorProfile, type CreateSeniorPayload } from '@/lib/api/seniors';
+import { createActivityBooking } from '@/lib/api/activities';
+import { createCheckoutSession } from '@/lib/api/payments';
+
 interface BookingFormProps {
   activity: {
     id: number | string;
@@ -289,32 +293,104 @@ interface BookingFormProps {
   };
 }
 
+const MOBILITY_OPTIONS = [
+  "Independent",
+  "Require a cane",
+  "Wheelchair",
+  "Bed Bound",
+]
+
 export const BookingForm = ({ activity }: BookingFormProps) => {
-  const [participants, setParticipants] = useState([{ id: 1, name: 'Senior Name', selected: true }]);
+  const [seniors, setSeniors] = useState<SeniorProfile[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [seniorsLoading, setSeniorsLoading] = useState(true)
   const [transport, setTransport] = useState('self');
   const [payment, setPayment] = useState('qr');
-  const [showGuestForm, setShowGuestForm] = useState(false);
-  
-  const [guestFullName, setGuestFullName] = useState('');
-  const [guestNickName, setGuestNickName] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  const toggleParticipant = (id: number) => {
-    setParticipants(participants.map(p => 
-      p.id === id ? { ...p, selected: !p.selected } : p
-    ));
-  };
+  const [newFullName, setNewFullName] = useState('');
+  const [newAge, setNewAge] = useState('');
+  const [newMobility, setNewMobility] = useState('');
+  const [newHealthNote, setNewHealthNote] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const handleConfirmGuest = () => {
-    const newId = participants.length + 1;
-    const finalName = guestNickName.trim() || guestFullName.trim() || `Guest ${newId}`;
-    
-    setParticipants([...participants, { id: newId, name: finalName, selected: true }]);
-    setShowGuestForm(false);
-    setGuestFullName('');
-    setGuestNickName('');
-  };
+  useEffect(() => {
+    fetchSeniors().then(list => {
+      setSeniors(list)
+    }).finally(() => setSeniorsLoading(false))
+  }, [])
 
-  const selectedCount = participants.filter(p => p.selected).length;
+  const toggleSenior = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleAddSenior = async () => {
+    const errors: Record<string, string> = {}
+    if (!newFullName.trim()) errors.fullName = "Full name is required."
+    if (!newAge.trim()) errors.age = "Age is required."
+    if (!newMobility) errors.mobility = "Mobility level is required."
+    if (Object.keys(errors).length) { setFormErrors(errors); return }
+
+    setAddLoading(true)
+    const payload: CreateSeniorPayload = {
+      fullname: newFullName.trim(),
+      dateOfBirth: newAge.trim(),
+      mobilityLevel: newMobility,
+      healthNote: newHealthNote.trim() || undefined,
+    }
+    const created = await createSenior(payload)
+    if (created) {
+      setSeniors(prev => [...prev, created])
+      setSelectedIds(prev => new Set(prev).add(created.id))
+      setShowAddForm(false)
+      setNewFullName(''); setNewAge(''); setNewMobility(''); setNewHealthNote('');
+      setFormErrors({})
+    }
+    setAddLoading(false)
+  }
+
+  const handleCheckout = async () => {
+    if (selectedIds.size === 0) return
+    setCheckoutLoading(true)
+
+    // Step 1: Create booking(s) via BookingService (status: CREATED, not paid)
+    const bookingResult = await createActivityBooking({
+      activityId: String(activity.id),
+      seniorIds: Array.from(selectedIds),
+      transport: transport as 'self' | 'pickup' | 'dropoff',
+    })
+
+    if (bookingResult) {
+      // Step 2: Create checkout session → get redirect URL (simulated Stripe)
+      const paymentMethod = payment === 'qr' ? 'qr_promptpay' : 'credit_card' as const
+      const checkoutSession = await createCheckoutSession({
+        bookingId: bookingResult.bookingId,
+        amount: bookingResult.totalAmount,
+        currency: 'THB',
+        method: paymentMethod,
+      })
+
+      if (checkoutSession) {
+        // Store booking data for the confirmation page
+        sessionStorage.setItem('activitySession', JSON.stringify(bookingResult))
+        sessionStorage.setItem('activityBookingDetail', JSON.stringify(activity))
+        // Step 3: Redirect to payment gateway
+        window.location.href = checkoutSession.checkoutUrl
+        return
+      }
+    }
+
+    setCheckoutLoading(false)
+  }
+
+  const selectedCount = selectedIds.size;
   const activityFee = activity.price * (selectedCount > 0 ? selectedCount : 1);
   const transportFee = (transport === 'pickup' || transport === 'dropoff') ? 150 : 0;
   const total = activityFee + transportFee;
@@ -352,97 +428,137 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
 
       <div className="mb-8">
         <h2 className="font-bold text-gray-900 mb-3 text-lg">Who is Participating?</h2>
-        <div className="space-y-3">
-          {participants.map(p => (
-            <div 
-              key={p.id} 
-              onClick={() => toggleParticipant(p.id)}
-              className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${p.selected ? 'border-[#385C4B] bg-[#F4F9F6]' : 'border-gray-200 bg-white'}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                  <User className="w-4 h-4" />
+        {seniorsLoading ? (
+          <div className="flex justify-center py-6">
+            <div className="w-8 h-8 border-4 border-[#385C4B] border-opacity-20 border-t-[#385C4B] rounded-full animate-spin" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {seniors.map(s => (
+              <div
+                key={s.id}
+                onClick={() => toggleSenior(s.id)}
+                className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${selectedIds.has(s.id) ? 'border-[#385C4B] bg-[#F4F9F6]' : 'border-gray-200 bg-white'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block text-sm font-semibold text-gray-800">{s.fullname}</span>
+                    <span className="block text-xs text-gray-500">{s.mobilityLevel}</span>
+                  </div>
                 </div>
-                <span className="text-sm font-semibold text-gray-800">{p.name}</span>
-              </div>
-              <div>
-                {p.selected ? (
-                  <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                ) : (
-                  <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>
-                )}
-              </div>
-            </div>
-          ))}
-          
-          {!showGuestForm ? (
-            <button onClick={() => setShowGuestForm(true)} className="flex flex-col items-start p-4 rounded-xl border border-gray-200 bg-white w-full hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full border border-[#385C4B] border-opacity-30 text-[#385C4B] flex items-center justify-center bg-white">
-                  <Plus className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                   <span className="block text-sm font-bold text-gray-900">Add Guest</span>
-                   <span className="block text-xs text-gray-500">Bring a friend</span>
-                </div>
-              </div>
-            </button>
-          ) : (
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-              <div className="flex items-center gap-3 p-4 border-b border-gray-100">
-                <div className="w-8 h-8 rounded-full border border-[#385C4B] border-opacity-30 text-[#385C4B] flex items-center justify-center bg-white">
-                  <Plus className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                   <span className="block text-sm font-bold text-[#385C4B]">Add Guest</span>
-                   <span className="block text-xs text-gray-500">Bring a friend</span>
-                </div>
-              </div>
-              <div className="p-4 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name *</label>
-                  <input 
-                    type="text" 
-                    value={guestFullName}
-                    onChange={(e) => setGuestFullName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#385C4B] text-sm" 
-                  />
+                  {selectedIds.has(s.id) ? (
+                    <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                  ) : (
+                    <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>
+                  )}
                 </div>
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Nick Name</label>
-                    <input 
-                      type="text" 
-                      value={guestNickName}
-                      onChange={(e) => setGuestNickName(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#385C4B] text-sm" 
+              </div>
+            ))}
+
+            {seniors.length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-4">No seniors added yet. Add one below to get started.</p>
+            )}
+
+            {!showAddForm ? (
+              <button onClick={() => setShowAddForm(true)} className="flex flex-col items-start p-4 rounded-xl border border-gray-200 bg-white w-full hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full border border-[#385C4B] border-opacity-30 text-[#385C4B] flex items-center justify-center bg-white">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block text-sm font-bold text-gray-900">Add Senior</span>
+                    <span className="block text-xs text-gray-500">Register a new senior to your care</span>
+                  </div>
+                </div>
+              </button>
+            ) : (
+              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+                <div className="flex items-center gap-3 p-4 border-b border-gray-100">
+                  <div className="w-8 h-8 rounded-full border border-[#385C4B] border-opacity-30 text-[#385C4B] flex items-center justify-center bg-white">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block text-sm font-bold text-[#385C4B]">Add Senior</span>
+                    <span className="block text-xs text-gray-500">Register a new senior to your care</span>
+                  </div>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      value={newFullName}
+                      onChange={(e) => { setNewFullName(e.target.value); setFormErrors(prev => { const n = {...prev}; delete n.fullName; return n }) }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-[#385C4B] text-sm ${formErrors.fullName ? 'border-red-400' : 'border-gray-300'}`}
+                      placeholder="e.g. Somchai Jaidee"
+                    />
+                    {formErrors.fullName && <p className="text-xs text-red-500 mt-1">{formErrors.fullName}</p>}
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Date of Birth *</label>
+                      <input
+                        type="date"
+                        value={newAge}
+                        onChange={(e) => { setNewAge(e.target.value); setFormErrors(prev => { const n = {...prev}; delete n.age; return n }) }}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-[#385C4B] text-sm ${formErrors.age ? 'border-red-400' : 'border-gray-300'}`}
+                      />
+                      {formErrors.age && <p className="text-xs text-red-500 mt-1">{formErrors.age}</p>}
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Mobility Level *</label>
+                      <div className="relative">
+                        <select
+                          value={newMobility}
+                          onChange={(e) => { setNewMobility(e.target.value); setFormErrors(prev => { const n = {...prev}; delete n.mobility; return n }) }}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-[#385C4B] text-sm appearance-none bg-white ${formErrors.mobility ? 'border-red-400' : 'border-gray-300'}`}
+                        >
+                          <option value="">Select...</option>
+                          {MOBILITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                        <ChevronLeft className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-gray-400 pointer-events-none" />
+                      </div>
+                      {formErrors.mobility && <p className="text-xs text-red-500 mt-1">{formErrors.mobility}</p>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Health Note</label>
+                    <textarea
+                      value={newHealthNote}
+                      onChange={(e) => setNewHealthNote(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#385C4B] text-sm resize-none"
+                      rows={2}
+                      placeholder="Any health conditions or notes (optional)"
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Age *</label>
-                    <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#385C4B] text-sm" />
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => { setShowAddForm(false); setFormErrors({}); setNewFullName(''); setNewAge(''); setNewMobility(''); setNewHealthNote('') }}
+                      className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-semibold text-gray-600"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddSenior}
+                      disabled={addLoading}
+                      className="flex-1 py-2 bg-[#385C4B] text-white rounded-lg hover:bg-[#2A4437] transition text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {addLoading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <><Plus className="w-4 h-4" /> Add Senior</>
+                      )}
+                    </button>
                   </div>
-                </div>
-                <div className="w-1/2 pr-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Mobility Level *</label>
-                  <div className="relative">
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#385C4B] text-sm appearance-none bg-white">
-                      <option></option>
-                      <option>Independent</option>
-                      <option>Needs assistance</option>
-                    </select>
-                    <ChevronLeft className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-gray-400 pointer-events-none" />
-                  </div>
-                </div>
-                <div className="pt-4">
-                  <button onClick={handleConfirmGuest} className="w-full py-2 flex items-center justify-center gap-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-semibold text-gray-700">
-                    <Plus className="w-4 h-4" /> Add Another Senior
-                  </button>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mb-8">
@@ -562,9 +678,19 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
           <span className="font-bold text-gray-900 text-lg">Total Amount</span>
           <span className="font-bold text-gray-900 text-xl">{total} Baht</span>
         </div>
-        <button className="w-full py-3.5 bg-[#385C4B] text-white font-bold rounded-xl hover:bg-[#2A4437] transition shadow-md flex items-center justify-center gap-2">
-          Check Out
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        <button
+          onClick={handleCheckout}
+          disabled={checkoutLoading || selectedIds.size === 0}
+          className="w-full py-3.5 bg-[#385C4B] text-white font-bold rounded-xl hover:bg-[#2A4437] transition shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {checkoutLoading ? (
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>
+              Check Out
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+            </>
+          )}
         </button>
       </div>
     </div>
