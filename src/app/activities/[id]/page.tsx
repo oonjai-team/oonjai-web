@@ -1,13 +1,54 @@
-import React from 'react';
+// src/app/activities/[id]/page.tsx
+"use client"
+import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ActivityCard, Accordion, PhotoGallery } from '../components';
 import { Header } from '@/components/common/Header';
-import { activitiesData } from '../data';
+import { fetchActivityById, fetchActivities, type ActivityData } from '@/lib/api/activities';
+import { useAuth } from '@/lib/auth/AuthContext';
 
-export default async function ActivityDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
-  const activity = activitiesData.find(a => a.id.toString() === resolvedParams.id) || activitiesData[0];
+export default function ActivityDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const { isAuthenticated } = useAuth()
+  const [activity, setActivity] = useState<ActivityData | null>(null)
+  const [related, setRelated] = useState<ActivityData[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetchActivityById(resolvedParams.id),
+      fetchActivities(),
+    ]).then(([act, all]) => {
+      setActivity(act)
+      setRelated(all.filter(a => a.id !== resolvedParams.id).slice(0, 4))
+    }).finally(() => setLoading(false))
+  }, [resolvedParams.id])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDF8F0]">
+        <Header />
+        <div className="flex justify-center py-20">
+          <div className="w-10 h-10 border-4 border-oonjai-green-100 border-t-oonjai-green-500 rounded-full animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!activity) {
+    return (
+      <div className="min-h-screen bg-[#FDF8F0]">
+        <Header />
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <p className="text-[#4D4D4D] text-lg">Activity not found</p>
+          <Link href="/activities" className="text-oonjai-green-500 font-bold hover:underline">
+            Back to Activities
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#FDF8F0] font-sans pb-16">
@@ -121,23 +162,37 @@ export default async function ActivityDetailsPage({ params }: { params: Promise<
                 <span className="text-xl">🔥</span>
                 <span className="text-sm font-bold text-[#B7791F]">{activity.spotsLeft} / {activity.maxPeople} spots left</span>
               </div>
-              <Link href={`/activities/${resolvedParams.id}/book`} className="block w-full">
-                <button className="w-full py-3 bg-[#385C4B] text-white font-bold rounded-xl hover:bg-[#2A4437] transition shadow-md flex items-center justify-center gap-2">
-                  Book Activity
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                </button>
-              </Link>
+              {isAuthenticated ? (
+                <Link href={`/activities/${resolvedParams.id}/book`} className="block w-full">
+                  <button className="w-full py-3 bg-[#385C4B] text-white font-bold rounded-xl hover:bg-[#2A4437] transition shadow-md flex items-center justify-center gap-2">
+                    Book Activity
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  </button>
+                </Link>
+              ) : (
+                <div>
+                  <Link href="/auth/login" className="block w-full">
+                    <button className="w-full py-3 bg-[#385C4B] text-white font-bold rounded-xl hover:bg-[#2A4437] transition shadow-md flex items-center justify-center gap-2">
+                      Log in to Book
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    </button>
+                  </Link>
+                  <p className="text-xs text-gray-500 text-center mt-2">Sign in to book and manage activities</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
-        <div className="mt-16 pt-8 border-t border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Others Activities You Might Like</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            {activitiesData.filter(a => a.id.toString() !== resolvedParams.id).slice(0, 4).map(activity => (
-              <ActivityCard key={activity.id} imageUrl={activity.images[0]} {...activity} />
-            ))}
+        {related.length > 0 && (
+          <div className="mt-16 pt-8 border-t border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Others Activities You Might Like</h2>
+            <div className="flex flex-wrap gap-4 lg:gap-6 justify-center sm:justify-start">
+              {related.map(a => (
+                <ActivityCard key={a.id} imageUrl={a.images[0]} {...a} />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
