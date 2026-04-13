@@ -7,7 +7,8 @@ import { useAuth } from "@/lib/auth/AuthContext";
 /**
  * OAuth callback page.
  * After LINE/Google OAuth, the backend redirects here with httpOnly cookies
- * already set. We detect the session, check if the user needs onboarding,
+ * already set (SameSite=None; Secure for cross-domain).
+ * We detect the session, check if the user needs onboarding,
  * and redirect accordingly.
  */
 export default function OAuthCallbackPage() {
