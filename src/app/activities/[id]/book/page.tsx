@@ -3,6 +3,7 @@
 import React, { useEffect, useState, use } from 'react';
 import { BookingForm } from '../../components';
 import { Header } from '@/components/common/Header';
+import { BookingFormSkeleton } from '@/components/common/Skeleton';
 import AuthGuard from '@/components/auth/AuthGuard';
 import { fetchActivityById, type ActivityData } from '@/lib/api/activities';
 import Link from 'next/link';
@@ -20,11 +21,11 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDF8F0]">
+      <div className="min-h-screen bg-[#FDF8F0] font-sans pb-16">
         <Header />
-        <div className="flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-oonjai-green-100 border-t-oonjai-green-500 rounded-full animate-spin" />
-        </div>
+        <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-8 flex justify-center">
+          <BookingFormSkeleton />
+        </main>
       </div>
     )
   }

@@ -4,6 +4,7 @@ import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Header } from '@/components/common/Header';
+import { ReviewFormSkeleton } from '@/components/common/Skeleton';
 import { fetchActivityById, type ActivityData } from '@/lib/api/activities';
 
 // eslint-disable-next-line no-unused-vars
@@ -44,11 +45,11 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDF8F0]">
+      <div className="min-h-screen bg-[#FDF8F0] font-sans pb-16">
         <Header />
-        <div className="flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-oonjai-green-100 border-t-oonjai-green-500 rounded-full animate-spin" />
-        </div>
+        <main className="max-w-3xl mx-auto px-4 lg:px-8 pt-8">
+          <ReviewFormSkeleton />
+        </main>
       </div>
     )
   }

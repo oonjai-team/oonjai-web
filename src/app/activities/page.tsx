@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { FilterBar, ActivityCard, type FilterState } from './components';
 import { Header } from '@/components/common/Header';
+import { ActivityCardSkeleton } from '@/components/common/Skeleton';
 import { fetchActivities, type ActivityData } from '@/lib/api/activities';
 
 export default function MarketplacePage() {
@@ -57,8 +58,10 @@ export default function MarketplacePage() {
         <FilterBar onChange={handleFilterChange} />
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-10 h-10 border-4 border-oonjai-green-100 border-t-oonjai-green-500 rounded-full animate-spin" />
+          <div className="flex flex-wrap gap-6 justify-center sm:justify-start">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <ActivityCardSkeleton key={i} />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">

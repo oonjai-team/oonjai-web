@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ActivityCard, Accordion, PhotoGallery } from '../components';
 import { Header } from '@/components/common/Header';
+import { ActivityDetailSkeleton } from '@/components/common/Skeleton';
 import { fetchActivityById, fetchActivities, type ActivityData } from '@/lib/api/activities';
 import { useAuth } from '@/lib/auth/AuthContext';
 
@@ -29,9 +30,7 @@ export default function ActivityDetailsPage({ params }: { params: Promise<{ id: 
     return (
       <div className="min-h-screen bg-[#FDF8F0]">
         <Header />
-        <div className="flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-oonjai-green-100 border-t-oonjai-green-500 rounded-full animate-spin" />
-        </div>
+        <ActivityDetailSkeleton />
       </div>
     )
   }

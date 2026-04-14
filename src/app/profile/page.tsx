@@ -2,6 +2,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { Header } from "@/components/common/Header"
+import { SeniorProfileSkeleton } from "@/components/common/Skeleton"
 import { useAuth } from "@/lib/auth/AuthContext"
 import { fetchSeniors, type SeniorProfile } from "@/lib/api/seniors"
 
@@ -220,8 +221,9 @@ export default function ProfilePage() {
             />
 
             {loading ? (
-              <div className="flex justify-center py-10">
-                <div className="w-8 h-8 border-4 border-oonjai-green-100 border-t-oonjai-green-500 rounded-full animate-spin" />
+              <div className="flex flex-col gap-4">
+                <SeniorProfileSkeleton />
+                <SeniorProfileSkeleton />
               </div>
             ) : seniors.length === 0 ? (
               <div className="text-center py-10">

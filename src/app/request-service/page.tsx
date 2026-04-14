@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import LocationPicker from '@/components/common/LocationPicker';
 import { Header } from '@/components/common/Header';
+import { RequestServiceSkeleton } from '@/components/common/Skeleton';
 import { useRouter } from 'next/navigation';
 import { fetchBookings, type BookingResponse } from '@/lib/api/bookings';
 import { fetchSeniors, fetchSeniorServiceConflicts, type SeniorProfile } from '@/lib/api/seniors';
@@ -155,11 +156,11 @@ export default function RequestServicePage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#FCFAEF]">
+      <div className="min-h-screen bg-[#FCFAEF] font-sans text-gray-900 pb-20">
         <Header />
-        <div className="flex justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-PrimaryGreen border-t-transparent" />
-        </div>
+        <main className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-10">
+          <RequestServiceSkeleton />
+        </main>
       </div>
     );
   }
