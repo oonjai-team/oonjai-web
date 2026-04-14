@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { AccountIcon, BookIcon, HandRequestIcon } from "@/components/icons/NavIcons";
 
 function Header() {
   const pathname = usePathname();
@@ -14,9 +15,9 @@ function Header() {
   const [accountOpen, setAccountOpen] = useState(false);
 
   const navLinks = [
-    { name: "Activity Marketplace", href: "/activities", icon: "/images/book-icon.svg" },
-    { name: "Request a Service", href: "/request-service", icon: "/images/hand-request-icon.svg" },
-    { name: "My Bookings", href: "/booking/confirmation", icon: "/images/book-icon.svg" },
+    { name: "Activity Marketplace", href: "/activities", Icon: BookIcon },
+    { name: "Request a Service", href: "/request-service", Icon: HandRequestIcon },
+    { name: "My Bookings", href: "/booking/confirmation", Icon: BookIcon },
   ];
 
   const handleLogout = async () => {
@@ -49,7 +50,7 @@ function Header() {
                       : "border-transparent text-PrimaryGreen/60 hover:text-PrimaryGreen font-medium"
                     }`}
                 >
-                  <Image src={link.icon} alt="" width={20} height={20} className={isActive ? "opacity-100" : "opacity-60"} />
+                  <link.Icon width={20} height={20} className={isActive ? "opacity-100" : "opacity-60"} />
                   <span className="text-sm lg:text-base whitespace-nowrap">{link.name}</span>
                 </Link>
               );
@@ -64,7 +65,7 @@ function Header() {
                   onClick={() => setAccountOpen(o => !o)}
                   className="flex items-center gap-2 text-PrimaryGreen font-bold cursor-pointer hover:opacity-80"
                 >
-                  <Image src="/images/account-icon.svg" alt="" width={24} height={24} />
+                  <AccountIcon width={24} height={24} />
                   <span>{user?.firstname || "Account"}</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
@@ -89,7 +90,7 @@ function Header() {
             ) : (
               <Link href="/auth/login"
                 className="flex items-center gap-2 text-PrimaryGreen font-bold hover:opacity-80">
-                <Image src="/images/account-icon.svg" alt="" width={24} height={24} />
+                <AccountIcon width={24} height={24} />
                 <span>Log In</span>
               </Link>
             )}
@@ -124,7 +125,7 @@ function Header() {
                 onClick={() => setIsMenuOpen(false)}
                 className={`flex items-center gap-4 py-4 border-b border-gray-50 last:border-none ${isActive ? 'text-PrimaryGreen font-bold' : 'text-PrimaryGreen/70'}`}
               >
-                <Image src={link.icon} alt="" width={20} height={20} />
+                <link.Icon width={20} height={20} />
                 <span>{link.name}</span>
               </Link>
             );
@@ -136,7 +137,7 @@ function Header() {
                 className="flex items-center gap-4 py-4 text-PrimaryGreen font-bold bg-[#FDFBF7] rounded-xl px-3"
                 onClick={() => setIsMenuOpen(false)}
               >
-                <Image src="/images/account-icon.svg" alt="" width={20} height={20} />
+                <AccountIcon width={20} height={20} />
                 {user?.firstname || "Account"}
               </Link>
               <button onClick={handleLogout}
@@ -150,7 +151,7 @@ function Header() {
               className="flex items-center gap-4 py-4 mt-2 text-PrimaryGreen font-bold bg-[#FDFBF7] rounded-xl px-3"
               onClick={() => setIsMenuOpen(false)}
             >
-              <Image src="/images/account-icon.svg" alt="" width={20} height={20} />
+              <AccountIcon width={20} height={20} />
               Log In
             </Link>
           )}

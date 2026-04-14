@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { BookingDetailDTO } from "@/dto/booking.dto"; 
+import { BookingDetailDTO } from "@/dto/booking.dto";
+import { CalendarIcon, ClockIcon } from "@/components/icons/NavIcons";
 
 interface BookingSummaryProps {
   booking: BookingDetailDTO;
@@ -71,28 +72,16 @@ export default function BookingSummaryCard({ booking, caretaker, location, estim
           
           {/* Custom Calendar Icon */}
           <div className="flex items-start gap-3">
-            <Image 
-              src="/images/calendar-icon.svg" 
-              alt="Calendar Icon" 
-              width={20} 
-              height={20} 
-              className="mt-0.5 opacity-70" 
-            />
+            <CalendarIcon width={20} height={20} className="mt-0.5 opacity-70" />
             <div>
               <p className="text-xs opacity-70">Scheduled Date</p>
               <p className="font-bold">{formattedDate}</p>
             </div>
           </div>
-          
+
           {/* Custom Clock Icon */}
           <div className="flex items-start gap-3">
-            <Image 
-              src="/images/clock-icon.svg" 
-              alt="Clock Icon" 
-              width={20} 
-              height={20} 
-              className="mt-0.5 opacity-70" 
-            />
+            <ClockIcon width={20} height={20} className="mt-0.5 opacity-70" />
             <div>
               <p className="text-xs opacity-70">Service Hours</p>
               <p className="font-bold">{formattedStartTime} - {formattedEndTime}</p>

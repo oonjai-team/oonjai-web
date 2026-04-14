@@ -1,28 +1,32 @@
 // src/components/onboarding/steps/SeniorProfileStep.tsx
 "use client"
-import { useState, useRef } from "react"
+import React, { useState, useRef } from "react"
 import Image from "next/image"
 import OJContinueButton from "../ui/OJContinueButton"
 import { submitOnboarding } from "@/lib/api/users"
 import { createSenior } from "@/lib/api/seniors"
 import type { OnboardingData } from "@/app/onboarding/page"
+import {
+  IndependentIcon, CaneIcon, WheelchairIcon, BedboundIcon,
+  HeartIcon, MetabolicIcon, RespiratoryIcon, BoneIcon, MentalIcon, BrainIcon,
+} from "@/components/icons/OnboardingIcons"
 
 interface Props { onboardingData: OnboardingData; onNext: () => void }
 
 const MOBILITY_OPTIONS = [
-  { label: "Independent", icon: "/images/onboarding/icons/independent.svg" },
-  { label: "Require a cane", icon: "/images/onboarding/icons/cane.svg" },
-  { label: "Wheelchair", icon: "/images/onboarding/icons/wheelchair.svg" },
-  { label: "Bed Bound", icon: "/images/onboarding/icons/bedbound.svg" },
+  { label: "Independent", IconComponent: IndependentIcon },
+  { label: "Require a cane", IconComponent: CaneIcon },
+  { label: "Wheelchair", IconComponent: WheelchairIcon },
+  { label: "Bed Bound", IconComponent: BedboundIcon },
 ]
 
 const CHRONIC_OPTIONS = [
-  { label: "Cardiovascular Diseases", icon: "/images/onboarding/icons/heart.svg" },
-  { label: "Metabolic & Endocrine Disorders", icon: "/images/onboarding/icons/metabolic.svg" },
-  { label: "Respiratory Diseases", icon: "/images/onboarding/icons/Frame-2.svg" },
-  { label: "Musculoskeletal Conditions", icon: "/images/onboarding/icons/bone.svg" },
-  { label: "Mental Health Conditions", icon: "/images/onboarding/icons/mental.svg" },
-  { label: "Neurological Conditions", icon: "/images/onboarding/icons/brain.svg" },
+  { label: "Cardiovascular Diseases", IconComponent: HeartIcon },
+  { label: "Metabolic & Endocrine Disorders", IconComponent: MetabolicIcon },
+  { label: "Respiratory Diseases", IconComponent: RespiratoryIcon },
+  { label: "Musculoskeletal Conditions", IconComponent: BoneIcon },
+  { label: "Mental Health Conditions", IconComponent: MentalIcon },
+  { label: "Neurological Conditions", IconComponent: BrainIcon },
 ]
 
 function ProfileInput({
@@ -59,7 +63,7 @@ function DropdownSelect({
   label: string
   required?: boolean
   error?: string
-  options: { label: string; icon?: string }[]
+  options: { label: string; IconComponent?: React.ComponentType<{ className?: string; width?: number; height?: number }> }[]
   value: string
   onChange: (v: string) => void
 }) {
@@ -82,14 +86,8 @@ function DropdownSelect({
         transition-colors hover:outline-[#365C48]`}
       >
         <div className="flex items-center gap-3 min-w-0">
-          {selectedOption?.icon && (
-            <Image
-              src={selectedOption.icon}
-              alt={selectedOption.label}
-              width={20}
-              height={20}
-              className="shrink-0"
-            />
+          {selectedOption?.IconComponent && (
+            <selectedOption.IconComponent width={20} height={20} className="shrink-0" />
           )}
           <span className={`text-sm font-light font-['Lexend'] ${
             value ? "text-oonjai-green-500" : "text-[#b1b1b1]"
@@ -125,14 +123,8 @@ function DropdownSelect({
               ${value === o.label ? "bg-oonjai-green-50" : "bg-white"}`}
             >
               <div className="flex items-center gap-4">
-                {o.icon && (
-                  <Image
-                    src={o.icon}
-                    alt={o.label}
-                    width={20}
-                    height={20}
-                    className="shrink-0"
-                  />
+                {o.IconComponent && (
+                  <o.IconComponent width={20} height={20} className="shrink-0" />
                 )}
                 <span>{o.label}</span>
               </div>

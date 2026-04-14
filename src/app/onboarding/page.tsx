@@ -10,6 +10,31 @@ import GoalStep         from "@/components/onboarding/steps/GoalStep"
 import ConcernsStep     from "@/components/onboarding/steps/ConcernsStep"
 import SeniorProfileStep from "@/components/onboarding/steps/SeniorProfileStep"
 
+const PRELOAD_IMAGES = [
+  // Step illustrations
+  "/images/onboarding/step1-illustrations.png",
+  "/images/onboarding/step2-illustrations.png",
+  "/images/onboarding/step3-illustrations.png",
+  "/images/onboarding/step4-illustrations.png",
+  // Relationship step
+  "/images/onboarding/rel-child.png",
+  "/images/onboarding/rel-grandchild.png",
+  "/images/onboarding/rel-sibling.png",
+  "/images/onboarding/rel-others.png",
+  // Goal step
+  "/images/onboarding/goal-homecare.png",
+  "/images/onboarding/goal-activities.png",
+  "/images/onboarding/goal-medical.png",
+  "/images/onboarding/goal-outings.png",
+  // Concerns step
+  "/images/onboarding/concern-fall.png",
+  "/images/onboarding/concern-lonely.png",
+  "/images/onboarding/concern-inactive.png",
+  "/images/onboarding/concern-health.png",
+  // Senior profile step
+  "/images/onboarding/avatar-placeholder.png",
+]
+
 const STEP_KEYS = ["phone", "relationship", "goal", "concerns", "senior-profile"] as const
 type StepKey = typeof STEP_KEYS[number]
 
@@ -51,6 +76,14 @@ export default function OnboardingPage() {
       router.replace("/booking")
     }
   }, [isLoading, needsOnboarding, router])
+
+  // Preload all onboarding images on mount
+  useEffect(() => {
+    PRELOAD_IMAGES.forEach(src => {
+      const img = new window.Image()
+      img.src = src
+    })
+  }, [])
 
   const stepIndex = STEP_KEYS.indexOf(step) + 1
   const config = STEP_CONFIG[step]
