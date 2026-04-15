@@ -82,9 +82,16 @@ export interface SeniorPrecaution {
 
 export async function fetchActivityPrecautions(activityId: string): Promise<SeniorPrecaution[]> {
   const connector = getConnector()
-  const res = await connector.GET<{ precautions: SeniorPrecaution[] }>(`activities/${activityId}/precautions`)
+  const res = await connector.GET<{ precautions: SeniorPrecaution[] | string }>(`activities/${activityId}/precautions`)
   if (res.isSuccess() && res.payload) {
-    return res.payload.precautions
+    const p = res.payload.precautions
+    if (Array.isArray(p)) return p
+    if (typeof p === "string") {
+      try {
+        const parsed = JSON.parse(p)
+        if (Array.isArray(parsed)) return parsed
+      } catch { /* fall through */ }
+    }
   }
   return []
 }
