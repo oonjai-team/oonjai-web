@@ -324,6 +324,9 @@ export class ServiceConnector {
       }
 
       try {
+        if (f.status === 204) {
+          return response.success()
+        }
         if (f.body) {
           const json = await f.json()
           return this.parseResponse<T>(json)
@@ -332,7 +335,7 @@ export class ServiceConnector {
           return response.success()
         }
       } catch {
-        if (f.status === 200) {
+        if (f.status === 200 || f.status === 204) {
           return response.success()
         }
         return response.error("unable to parse json response")
