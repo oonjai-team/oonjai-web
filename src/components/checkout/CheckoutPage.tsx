@@ -186,6 +186,7 @@ export default function CheckoutPage() {
 
       sessionStorage.removeItem("selectedCaretaker")
       sessionStorage.removeItem("pendingBookingRequest")
+      sessionStorage.removeItem("requestServiceFormDraft")
       router.push("/booking/confirmation")
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.")

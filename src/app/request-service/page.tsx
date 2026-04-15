@@ -89,6 +89,23 @@ export default function RequestServicePage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  // Restore draft when returning from caretaker selection (?resume=1)
+  useEffect(() => {
+    if (searchParams?.get('resume') !== '1') return;
+    if (typeof window === 'undefined') return;
+    const raw = sessionStorage.getItem(FORM_DRAFT_KEY);
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw);
+      React.startTransition(() => {
+        setFormData(prev => ({ ...prev, ...draft }));
+        setView('form');
+      });
+    } catch {
+      /* ignore malformed draft */
+    }
+  }, [searchParams]);
+
   // Check senior conflicts when dates/times change — deselect senior if now conflicted
   useEffect(() => {
     if (!combinedStartDate || !combinedEndDate) {
@@ -146,6 +163,7 @@ export default function RequestServicePage() {
     };
 
     sessionStorage.setItem("pendingBookingRequest", JSON.stringify(bookingRequest));
+    sessionStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(formData));
     router.push("/booking");
   };
 
@@ -219,7 +237,10 @@ export default function RequestServicePage() {
         ) : (
           <div className="max-w-3xl mx-auto">
             <button
-              onClick={() => setView('list')}
+              onClick={() => {
+                sessionStorage.removeItem(FORM_DRAFT_KEY);
+                setView('list');
+              }}
               className="flex items-center gap-1 text-sm font-bold text-[#3A5A40] mb-6 hover:opacity-70 transition"
             >
               <ChevronLeft size={18} /> Back
