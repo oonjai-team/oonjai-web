@@ -71,6 +71,24 @@ export async function fetchSeniorConflicts(activityId: string): Promise<SeniorCo
   return { alreadyBooked: [], timeConflicts: [] }
 }
 
+export type PrecautionRisk = "none" | "medium" | "high"
+
+export interface SeniorPrecaution {
+  seniorId: string
+  fullname: string
+  risk: PrecautionRisk
+  precaution: string
+}
+
+export async function fetchActivityPrecautions(activityId: string): Promise<SeniorPrecaution[]> {
+  const connector = getConnector()
+  const res = await connector.GET<{ precautions: SeniorPrecaution[] }>(`activities/${activityId}/precautions`)
+  if (res.isSuccess() && res.payload) {
+    return res.payload.precautions
+  }
+  return []
+}
+
 export async function createActivityBooking(payload: BookActivityPayload): Promise<ActivityBookingResponse | null> {
   const connector = getConnector()
   const res = await connector.POST<ActivityBookingResponse>(

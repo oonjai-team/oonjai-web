@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react"
 import Image from "next/image"
 import OJContinueButton from "../ui/OJContinueButton"
+import LocationPicker from "@/components/common/LocationPicker"
 import { submitOnboarding } from "@/lib/api/users"
 import { createSenior } from "@/lib/api/seniors"
 import type { OnboardingData } from "@/app/onboarding/page"
@@ -154,11 +155,10 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
     fullName: "", nickName: "", age: "",
     mobility: "", chronic: "", allergy: "",
     handicap: "", specialNeeds: "", emergencyNo: "",
-    hospital: "",
+    hospital: "", location: "",
   })
   const [errors, setErrors]     = useState<Record<string, string>>({})
   const [loading, setLoading]   = useState(false)
-  const [showMap, setShowMap]   = useState(false)
   const fileRef                 = useRef<HTMLInputElement>(null)
 
   const set = (k: string, v: string) => {
@@ -208,7 +208,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
       fullName: "", nickName: "", age: "",
       mobility: "", chronic: "", allergy: "",
       handicap: "", specialNeeds: "", emergencyNo: "",
-      hospital: "",
+      hospital: "", location: "",
     })
     setPhoto(null)
     setErrors({})
@@ -370,55 +370,11 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
           ))}
 
           {/* Location */}
-          <div className="w-full flex flex-col gap-1 mb-4">
-            <label className="text-oonjai-green-500 text-base
-            font-light font-['Lexend']">Location</label>
-
-            <button
-              type="button"
-              onClick={() => setShowMap(m => !m)}
-              className="w-full h-9 pl-5 pr-3 py-5 bg-white rounded
-              outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
-              flex justify-between items-center cursor-pointer
-              hover:outline-[#365C48] transition-colors"
-            >
-              <span className="text-oonjai-green-500 text-sm
-              font-light font-['Lexend']">
-                Select From Map
-              </span>
-              <svg viewBox="0 0 24 24" fill="none"
-              className="w-5 h-5 text-oonjai-green-500">
-                <path d="M12 2C8.69 2 6 4.69 6 8c0 5.25 6 13 6 13s6-7.75 6-13c0-3.31-2.69-6-6-6z"
-                stroke="currentColor" strokeWidth="2"/>
-                <circle cx="12" cy="8" r="2" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </button>
-
-            {showMap && (
-              <div className="w-full h-56 px-7 py-5 bg-white rounded
-              outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
-              flex flex-col gap-2.5">
-                <div className="px-3 py-1 rounded
-                outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
-                flex justify-between items-center">
-                  <span className="text-[#b1b1b1] text-xs
-                  font-light font-['Lexend']">
-                    Search Your Location
-                  </span>
-                  <svg viewBox="0 0 24 24" fill="none"
-                  className="w-5 h-5 text-[#b1b1b1]">
-                    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/>
-                    <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                </div>
-                <div className="flex-1 rounded
-                outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
-                bg-oonjai-cream-100 flex items-center justify-center
-                text-[#b1b1b1] text-xs font-['Lexend']">
-                  Map view
-                </div>
-              </div>
-            )}
+          <div className="w-full mb-4">
+            <LocationPicker
+              value={form.location}
+              onChange={(location) => set("location", location)}
+            />
           </div>
 
           {/* Add Another Senior */}

@@ -8,6 +8,7 @@ import { Header } from '@/components/common/Header';
 import { ActivityDetailSkeleton } from '@/components/common/Skeleton';
 import { fetchActivityById, fetchActivities, type ActivityData } from '@/lib/api/activities';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { MedicalPrecautions } from './MedicalPrecautions';
 
 export default function ActivityDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -115,21 +116,21 @@ export default function ActivityDetailsPage({ params }: { params: Promise<{ id: 
                     <span className="bg-white px-3 py-1.5 rounded-lg text-xs text-gray-700 border border-gray-200">Standing</span>
                   </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase">Health Alerts</h4>
-                  <div className="bg-[#FDE8E8] rounded-xl p-4 border border-[#FDB8B8]">
-                    <div className="flex gap-2 mb-2">
-                      <span className="text-[10px] font-bold text-[#C53030] bg-white px-2 py-0.5 rounded border border-[#FDB8B8]">AI Supportive</span>
+                {isAuthenticated ? (
+                  <MedicalPrecautions activityId={resolvedParams.id} />
+                ) : (
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase">Health Alerts</h4>
+                    <div className="bg-[#FDE8E8] rounded-xl p-4 border border-[#FDB8B8]">
+                      <div className="flex gap-2 mb-2">
+                        <span className="text-[10px] font-bold text-[#C53030] bg-white px-2 py-0.5 rounded border border-[#FDB8B8]">AI Supportive</span>
+                      </div>
+                      <p className="text-xs text-[#9B2C2C] leading-relaxed">
+                        Log in to see personalised medical precautions for your seniors based on this activity.
+                      </p>
                     </div>
-                    <h5 className="font-bold text-[#C53030] flex items-center gap-1.5 text-sm mb-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      Medical Precaution
-                    </h5>
-                    <p className="text-xs text-[#9B2C2C] leading-relaxed">
-                      This is an outdoor activity. High pollen area. Participants with asthma or seasonal allergies should bring appropriate medications.
-                    </p>
                   </div>
-                </div>
+                )}
               </div>
             </div>
             <Accordion title="Activity Overview" defaultOpen={true}>
