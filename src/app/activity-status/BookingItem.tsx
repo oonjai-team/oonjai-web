@@ -12,6 +12,13 @@ const STATUS_STYLES: Record<string, { label: string; cls: string; Icon: typeof C
   cancelled: { label: "Cancelled",  cls: "bg-red-50 text-red-600",                 Icon: Ban },
 }
 
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  activity: "Activity",
+  medical_escort: "Medical Escort",
+  home_care: "Home Care",
+  outings: "Outings",
+}
+
 interface Props {
   booking: BookingResponse
   variant: "upcoming" | "done" | "cancelled"
@@ -30,7 +37,9 @@ function formatDateParts(iso: string): { date: string; time: string } {
 
 const BookingItem = ({ booking, variant, onCancel, onReview, cancelling }: Props) => {
   const status = STATUS_STYLES[booking.status] ?? STATUS_STYLES.created
-  const title = booking.activity?.title ?? booking.note ?? `${booking.serviceType} booking`
+  const typeLabel = SERVICE_TYPE_LABELS[booking.serviceType]
+    ?? booking.serviceType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+  const title = booking.activity?.title ?? booking.note ?? `${typeLabel} booking`
   const location = booking.activity?.location ?? booking.location
   const { date, time } = formatDateParts(booking.startDate)
   const image = booking.activity?.images?.[0]
@@ -76,6 +85,9 @@ const BookingItem = ({ booking, variant, onCancel, onReview, cancelling }: Props
       </div>
 
       <div className="flex flex-col items-end gap-2">
+        <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold font-['Lexend']">
+          {typeLabel}
+        </span>
         <span className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 text-xs font-semibold font-['Lexend'] ${status.cls}`}>
           <StatusIcon size={12} />
           {status.label}

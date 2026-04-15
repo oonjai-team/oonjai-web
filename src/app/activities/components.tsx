@@ -13,9 +13,13 @@ import { Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
+const PLACEHOLDER_IMG = "/images/landing-hero.png";
+const safeSrc = (url: string | undefined) => (url && url.length > 0 ? url : PLACEHOLDER_IMG);
+
 export const PhotoGallery = ({ images }: { images: string[] }) => {
   const [showModal, setShowModal] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
+  const safeImages = images && images.length > 0 ? images : [PLACEHOLDER_IMG];
 
   const openModal = (index: number) => {
     setModalIndex(index);
@@ -28,8 +32,8 @@ export const PhotoGallery = ({ images }: { images: string[] }) => {
     document.body.style.overflow = '';
   }, []);
 
-  const prevPhoto = useCallback(() => setModalIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1)), [images.length]);
-  const nextPhoto = useCallback(() => setModalIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0)), [images.length]);
+  const prevPhoto = useCallback(() => setModalIndex((prev) => (prev > 0 ? prev - 1 : safeImages.length - 1)), [safeImages.length]);
+  const nextPhoto = useCallback(() => setModalIndex((prev) => (prev < safeImages.length - 1 ? prev + 1 : 0)), [safeImages.length]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,25 +53,27 @@ export const PhotoGallery = ({ images }: { images: string[] }) => {
           onClick={() => openModal(0)}
           className="col-span-2 row-span-2 rounded-2xl cursor-pointer overflow-hidden relative group"
         >
-          <Image src={images[0]} alt="Activity gallery 1" fill unoptimized className="object-cover group-hover:scale-105 transition-transform duration-300" />
+          <Image src={safeSrc(safeImages[0])} alt="Activity gallery 1" fill unoptimized className="object-cover group-hover:scale-105 transition-transform duration-300" />
         </div>
-        
-        {images.slice(1, 4).map((img, index) => (
-          <div 
-            key={index} 
+
+        {safeImages.slice(1, 4).map((img, index) => (
+          <div
+            key={index}
             onClick={() => openModal(index + 1)}
             className="rounded-2xl cursor-pointer overflow-hidden relative group"
           >
-            <Image src={img} alt={`Activity gallery ${index + 2}`} fill unoptimized className="object-cover group-hover:scale-105 transition-transform duration-300" />
+            <Image src={safeSrc(img)} alt={`Activity gallery ${index + 2}`} fill unoptimized className="object-cover group-hover:scale-105 transition-transform duration-300" />
           </div>
         ))}
-        <div 
-          onClick={() => openModal(4)}
-          className="bg-gray-300 rounded-2xl relative flex items-center justify-center cursor-pointer hover:opacity-90 transition overflow-hidden group"
-        >
-          <Image src={images[4]} alt="Activity gallery 5" fill unoptimized className="object-cover group-hover:scale-105 transition-transform duration-300 opacity-60" />
-          <span className="relative text-white font-bold text-lg">+{images.length - 4} More Photos</span>
-        </div>
+        {safeImages.length > 4 && (
+          <div
+            onClick={() => openModal(4)}
+            className="bg-gray-300 rounded-2xl relative flex items-center justify-center cursor-pointer hover:opacity-90 transition overflow-hidden group"
+          >
+            <Image src={safeSrc(safeImages[4])} alt="Activity gallery 5" fill unoptimized className="object-cover group-hover:scale-105 transition-transform duration-300 opacity-60" />
+            <span className="relative text-white font-bold text-lg">+{safeImages.length - 4} More Photos</span>
+          </div>
+        )}
       </div>
 
       <div className="relative h-64 w-full lg:hidden group">
@@ -78,10 +84,10 @@ export const PhotoGallery = ({ images }: { images: string[] }) => {
           pagination={{ clickable: true, el: '.custom-pagination' }}
           className="h-full w-full"
         >
-          {images.map((img, index) => (
+          {safeImages.map((img, index) => (
             <SwiperSlide key={index}>
               <div className="relative w-full h-full">
-                <Image src={img} alt={`Activity slide ${index + 1}`} fill unoptimized className="object-cover" />
+                <Image src={safeSrc(img)} alt={`Activity slide ${index + 1}`} fill unoptimized className="object-cover" />
               </div>
             </SwiperSlide>
           ))}
@@ -113,9 +119,9 @@ export const PhotoGallery = ({ images }: { images: string[] }) => {
             </button>
 
             <div className="relative flex items-center justify-center max-h-[80vh] w-full overflow-hidden rounded-xl h-full">
-              <Image 
-                src={images[modalIndex]} 
-                alt={`Gallery detail ${modalIndex + 1}`} 
+              <Image
+                src={safeSrc(safeImages[modalIndex])}
+                alt={`Gallery detail ${modalIndex + 1}`}
                 fill
                 unoptimized
                 className="object-contain"
@@ -131,7 +137,7 @@ export const PhotoGallery = ({ images }: { images: string[] }) => {
           </div>
 
           <div className="flex gap-2 p-6">
-            {images.map((_, index) => (
+            {safeImages.map((_, index) => (
               <div 
                 key={index}
                 className={`w-2.5 h-2.5 rounded-full transition ${modalIndex === index ? 'bg-white' : 'bg-white/40'}`}
@@ -301,7 +307,7 @@ export const ActivityCard = ({ id, title, category, host, displayDate, location,
     return (
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col w-full sm:w-[280px]">
             <div className="relative h-48 bg-gray-200">
-                {imageUrl ? <Image src={imageUrl} alt={title} fill unoptimized className="object-cover" /> : <div className="w-full h-full bg-[#82A895]" />}
+                {imageUrl && imageUrl.length > 0 ? <Image src={imageUrl} alt={title} fill unoptimized className="object-cover" /> : <div className="w-full h-full bg-[#82A895]" />}
                 <div className="absolute bottom-3 right-3 bg-white text-gray-900 text-xs font-bold px-3 py-1 rounded-full shadow-sm">฿{price}</div>
             </div>
             <div className="p-4 flex flex-col flex-1">
@@ -459,7 +465,9 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
   const handleCheckout = async () => {
     if (selectedIds.size === 0) return
     if (selectedIds.size > spotsLeft) {
-      setCheckoutError(`Only ${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} available, but ${selectedIds.size} selected.`)
+      setCheckoutError(
+        `You've reached the maximum available seats (${spotsLeft}). If you'd like to add another senior, please remove one of the currently selected seniors first.`
+      )
       return
     }
     setCheckoutLoading(true)
@@ -512,7 +520,7 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
       } else if (raw.startsWith('TIME_CONFLICT')) {
         friendly = 'One or more selected seniors have another booking overlapping this activity.'
       } else if (raw.startsWith('FULL')) {
-        friendly = 'This activity is fully booked.'
+        friendly = `You've reached the maximum available seats for this activity. If you'd like to add another senior, please remove one of the currently selected seniors first.`
       } else if (raw.toLowerCase().includes('transportlocation')) {
         friendly = 'Please select a pick up / drop off location on the map.'
       }
@@ -850,7 +858,7 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
           )}
         </button>
         {checkoutError && (
-          <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-xs text-red-600 font-medium text-center">
+          <div className="mt-3 bg-[#FFF4E0] border border-[#F6D58B] rounded-lg px-4 py-2.5 text-xs text-[#8A5A00] font-medium text-center">
             {checkoutError}
           </div>
         )}

@@ -87,7 +87,9 @@ export default function ActivityDetailsPage({ params }: { params: Promise<{ id: 
             <div className="bg-white border border-[#385C4B] border-opacity-20 rounded-2xl p-4 lg:p-6 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-gray-300 rounded-full flex-shrink-0 overflow-hidden relative">
-                  <Image src={activity.hostAvatar} alt={activity.host} fill unoptimized className="object-cover" />
+                  {activity.hostAvatar && activity.hostAvatar.length > 0 && (
+                    <Image src={activity.hostAvatar} alt={activity.host} fill unoptimized className="object-cover" />
+                  )}
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900">Hosted By: {activity.host}</h3>

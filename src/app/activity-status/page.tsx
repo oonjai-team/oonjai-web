@@ -29,7 +29,7 @@ function groupBookings(bookings: BookingResponse[]): Grouped {
       groups.cancelled.push(b)
       continue
     }
-    if (b.status === "completed" || (!isNaN(end) && end < now)) {
+    if (b.status === "completed") {
       groups.done.push(b)
       continue
     }
