@@ -17,7 +17,7 @@ function Header() {
   const navLinks = [
     { name: "Activity Marketplace", href: "/activities", Icon: BookIcon },
     { name: "Request a Service", href: "/request-service", Icon: HandRequestIcon },
-    { name: "My Bookings", href: "/booking/confirmation", Icon: BookIcon },
+    { name: "My Bookings", href: "/activity-status", Icon: BookIcon },
   ];
 
   const handleLogout = async () => {

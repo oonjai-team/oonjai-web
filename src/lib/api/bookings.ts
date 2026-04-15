@@ -10,6 +10,18 @@ export interface CreateBookingPayload {
   note?: string
 }
 
+export interface BookingActivitySummary {
+  id: string
+  title: string
+  displayDate: string
+  startDate: string
+  endDate: string
+  location: string
+  images: string[]
+  duration: string
+  category: string
+}
+
 export interface BookingResponse {
   id: string
   adultChildId: string
@@ -24,8 +36,10 @@ export interface BookingResponse {
   estimatedCost: number
   currency: string
   createdAt: string
+  activityId?: string | null
   caretakerName?: string
   caretakerSpecialization?: string
+  activity?: BookingActivitySummary
 }
 
 export async function createBooking(payload: CreateBookingPayload): Promise<BookingResponse | null> {
@@ -64,5 +78,11 @@ export async function fetchBookingById(id: string): Promise<BookingResponse | nu
 export async function confirmBooking(bookingId: string): Promise<boolean> {
   const connector = getConnector()
   const res = await connector.POST(`bookings/${bookingId}/confirm`)
+  return res.isSuccess()
+}
+
+export async function cancelBooking(bookingId: string): Promise<boolean> {
+  const connector = getConnector()
+  const res = await connector.DELETE(`bookings/${bookingId}`)
   return res.isSuccess()
 }

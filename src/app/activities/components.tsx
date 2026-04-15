@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  ChevronLeft, Calendar as CalendarIcon, 
+import {
+  ChevronLeft, ChevronDown, Calendar as CalendarIcon,
   MapPin, FileText, User, Plus
 } from 'lucide-react';
 
@@ -324,8 +324,27 @@ export const Accordion = ({ title, children, defaultOpen = false }: AccordionPro
     const [isOpen, setIsOpen] = useState(defaultOpen);
     return (
         <div className="border border-[#385C4B] border-opacity-20 rounded-xl mb-4 overflow-hidden bg-white">
-            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between p-4 text-left font-bold text-sm text-gray-900">{title} <ChevronLeft className={`w-5 h-5 transition-transform rotate-90 ${isOpen ? '-rotate-90' : ''}`} /></button>
-            {isOpen && <div className="p-4 pt-0 text-sm text-gray-600 border-t border-gray-100">{children}</div>}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              aria-expanded={isOpen}
+              className="w-full flex items-center justify-between p-4 text-left font-bold text-sm text-gray-900 cursor-pointer"
+            >
+              <span>{title}</span>
+              <ChevronDown
+                className={`w-5 h-5 text-[#385C4B] transition-transform duration-300 ease-in-out ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+              />
+            </button>
+            <div
+              className={`grid transition-all duration-300 ease-in-out ${
+                isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="p-4 pt-3 text-sm text-gray-600 border-t border-gray-100">
+                  {children}
+                </div>
+              </div>
+            </div>
         </div>
     );
 };
@@ -333,6 +352,7 @@ export const Accordion = ({ title, children, defaultOpen = false }: AccordionPro
 import { fetchSeniors, createSenior, type SeniorProfile, type CreateSeniorPayload } from '@/lib/api/seniors';
 import { createActivityBooking, fetchSeniorConflicts } from '@/lib/api/activities';
 import { createCheckoutSession } from '@/lib/api/payments';
+import LocationPicker from '@/components/common/LocationPicker';
 
 interface BookingFormProps {
   activity: {
@@ -362,6 +382,8 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [seniorsLoading, setSeniorsLoading] = useState(true)
   const [transport, setTransport] = useState('self');
+  const [pickupLocation, setPickupLocation] = useState('');
+  const [dropoffLocation, setDropoffLocation] = useState('');
   const [payment, setPayment] = useState('qr');
   const [showAddForm, setShowAddForm] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
@@ -373,6 +395,7 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
   const [newAge, setNewAge] = useState('');
   const [newMobility, setNewMobility] = useState('');
   const [newHealthNote, setNewHealthNote] = useState('');
+  const [newLocation, setNewLocation] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -408,18 +431,24 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
     if (Object.keys(errors).length) { setFormErrors(errors); return }
 
     setAddLoading(true)
+    // Fold the picked home address into the health note so it's preserved
+    // without requiring a schema change.
+    const healthNoteParts = [
+      newHealthNote.trim(),
+      newLocation.trim() ? `Home: ${newLocation.trim()}` : '',
+    ].filter(Boolean)
     const payload: CreateSeniorPayload = {
       fullname: newFullName.trim(),
       dateOfBirth: newAge.trim(),
       mobilityLevel: newMobility,
-      healthNote: newHealthNote.trim() || undefined,
+      healthNote: healthNoteParts.length ? healthNoteParts.join(' | ') : undefined,
     }
     const created = await createSenior(payload)
     if (created) {
       setSeniors(prev => [...prev, created])
       setSelectedIds(prev => new Set(prev).add(created.id))
       setShowAddForm(false)
-      setNewFullName(''); setNewAge(''); setNewMobility(''); setNewHealthNote('');
+      setNewFullName(''); setNewAge(''); setNewMobility(''); setNewHealthNote(''); setNewLocation('');
       setFormErrors({})
     }
     setAddLoading(false)
@@ -437,10 +466,22 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
     setCheckoutError('')
 
     // Step 1: Create booking(s) via BookingService (status: CREATED, not paid)
+    const transportLocation =
+      transport === 'pickup' ? pickupLocation :
+      transport === 'dropoff' ? dropoffLocation :
+      undefined
+
+    if ((transport === 'pickup' || transport === 'dropoff') && !transportLocation) {
+      setCheckoutError(`Please select a ${transport === 'pickup' ? 'pick up' : 'drop off'} location.`)
+      setCheckoutLoading(false)
+      return
+    }
+
     const bookingResult = await createActivityBooking({
       activityId: String(activity.id),
       seniorIds: Array.from(selectedIds),
       transport: transport as 'self' | 'pickup' | 'dropoff',
+      transportLocation,
     })
 
     if (bookingResult) {
@@ -650,9 +691,15 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
                       placeholder="Any health conditions or notes (optional)"
                     />
                   </div>
+                  <div>
+                    <LocationPicker
+                      value={newLocation}
+                      onChange={(loc) => setNewLocation(loc)}
+                    />
+                  </div>
                   <div className="flex gap-3 pt-2">
                     <button
-                      onClick={() => { setShowAddForm(false); setFormErrors({}); setNewFullName(''); setNewAge(''); setNewMobility(''); setNewHealthNote('') }}
+                      onClick={() => { setShowAddForm(false); setFormErrors({}); setNewFullName(''); setNewAge(''); setNewMobility(''); setNewHealthNote(''); setNewLocation('') }}
                       className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-semibold text-gray-600"
                     >
                       Cancel
@@ -696,20 +743,11 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
             {transport === 'pickup' && (
               <div className="p-4 border-t border-gray-100">
                 <h3 className="text-sm font-bold text-gray-900 mb-3">Select Your Pick Up Location</h3>
-                <div className="mb-4 relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  </div>
-                  <input type="text" placeholder="Search Your Location" className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#385C4B]" />
-                </div>
-                <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 relative overflow-hidden flex items-center justify-center">
-                  <Image src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80" alt="Map" fill unoptimized className="object-cover opacity-60" />
-                  <div className="relative z-10 flex flex-col items-center">
-                    <MapPin className="w-8 h-8 text-red-500 fill-current" />
-                    <span className="bg-white px-2 py-1 rounded text-xs font-bold shadow-sm mt-1">Benchakitti Park</span>
-                  </div>
-                </div>
-                <div className="flex justify-between text-xs text-gray-600 mb-2">
+                <LocationPicker
+                  value={pickupLocation}
+                  onChange={(loc) => setPickupLocation(loc)}
+                />
+                <div className="flex justify-between text-xs text-gray-600 mt-4 mb-2">
                   <span>Pick Up Time (based on Google Maps Calculation)</span>
                   <span className="font-bold text-gray-900">5:30 PM</span>
                 </div>
@@ -730,20 +768,11 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
             {transport === 'dropoff' && (
               <div className="p-4 border-t border-gray-100">
                 <h3 className="text-sm font-bold text-gray-900 mb-3">Select Your Drop Off Location</h3>
-                <div className="mb-4 relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  </div>
-                  <input type="text" placeholder="Search Your Location" className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#385C4B]" />
-                </div>
-                <div className="w-full h-40 bg-gray-200 rounded-lg mb-4 relative overflow-hidden flex items-center justify-center">
-                  <Image src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80" alt="Map" fill unoptimized className="object-cover opacity-60" />
-                  <div className="relative z-10 flex flex-col items-center">
-                    <MapPin className="w-8 h-8 text-red-500 fill-current" />
-                    <span className="bg-white px-2 py-1 rounded text-xs font-bold shadow-sm mt-1">Benchakitti Park</span>
-                  </div>
-                </div>
-                <div className="flex justify-between text-xs text-gray-600 mb-2">
+                <LocationPicker
+                  value={dropoffLocation}
+                  onChange={(loc) => setDropoffLocation(loc)}
+                />
+                <div className="flex justify-between text-xs text-gray-600 mt-4 mb-2">
                   <span>Drop Off Time (based on Google Maps Calculation)</span>
                   <span className="font-bold text-gray-900">7:30 PM</span>
                 </div>

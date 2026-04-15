@@ -43,6 +43,7 @@ export interface BookActivityPayload {
   activityId: string
   seniorIds: string[]
   transport: "self" | "pickup" | "dropoff"
+  transportLocation?: string
   note?: string
 }
 

@@ -12,6 +12,36 @@ export function SkeletonCircle({ className = '' }: { className?: string }) {
 
 /* ── Page-level skeletons ── */
 
+export function BookingsListSkeleton() {
+  return (
+    <div className="w-full max-w-[896px] mx-auto flex flex-col gap-8">
+      {[0, 1].map(i => (
+        <section key={i} className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <div className="flex flex-col gap-3">
+            {[0, 1].map(j => (
+              <div
+                key={j}
+                className="p-4 bg-white rounded-xl outline outline-1 outline-lightGrey flex items-center gap-4"
+              >
+                <Skeleton className="h-16 w-16 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+                <Skeleton className="h-8 w-20 rounded-lg" />
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 export function ActivityCardSkeleton() {
   return (
     <div className="w-full sm:w-[280px] rounded-2xl bg-white shadow-sm overflow-hidden border border-gray-100">
