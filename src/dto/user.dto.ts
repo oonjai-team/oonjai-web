@@ -1,10 +1,20 @@
+import {TimestampType} from "@dto/timestamp"
+
+export interface AdultChildAttributes {
+  phone: string
+  relationship: string
+  goal: string
+  concerns: string[]
+}
+
 export interface UserDTO {
   userID: string
   email: string
   firstname: string
   lastname: string
-  createdAt: string
+  createdAt: TimestampType
   role: string
+  adultChild?: AdultChildAttributes
 }
 
 export type AdultChildDTO = UserDTO

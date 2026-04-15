@@ -1,5 +1,10 @@
 "use client";
 
+export default function ExamplePage() {
+  return <div className="p-8 text-center text-gray-400">Example page (placeholder)</div>
+}
+
+/*
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { mockData, ExampleItemDTO } from "./schema";
@@ -59,4 +64,4 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default Page;*/

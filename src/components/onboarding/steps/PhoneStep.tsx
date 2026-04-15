@@ -1,36 +1,38 @@
 // src/components/onboarding/steps/PhoneStep.tsx
 "use client"
 import { useState } from "react"
-import OnboardingShell from "../OnboardingShell"
+import { useRouter } from "next/navigation"
+import { LogOut } from "lucide-react"
+import { useAuth } from "@/lib/auth/AuthContext"
 import OJContinueButton from "../ui/OJContinueButton"
 
-interface Props { onNext: () => void }
+interface Props { onNext: (phone: string) => void }
 
 export default function PhoneStep({ onNext }: Props) {
+  const router = useRouter()
+  const { logout } = useAuth()
   const [phone, setPhone]   = useState("")
   const [error, setError]   = useState("")
-  const [loading, setLoading] = useState(false)
 
   const handleContinue = () => {
     if (!phone.trim()) { setError("Phone number is required."); return }
     if (!/^\d{9,10}$/.test(phone.replace(/\s/g, ""))) {
       setError("Enter a valid phone number."); return
     }
-    setLoading(true)
-    setTimeout(() => { setLoading(false); onNext() }, 1500)
+    onNext(phone)
+  }
+
+  const handleSwitchAccount = async () => {
+    await logout()
+    router.push("/auth/login")
   }
 
   return (
-    <OnboardingShell
-      step={1}
-      illustration="/images/onboarding/step1-illustrations.png"
-      illustrationW={1042} illustrationH={775}
-      illustrationPos="left-[750px] bottom-[0px]"
-    >
+    <>
       {/* Content */}
-      <div className="flex flex-col gap-7 min-h-[557px]">
+      <div className="flex flex-col gap-7 mb-6">
         <div className="flex flex-col gap-1">
-          <div class="self-stretch justify-start text-oonjai-green-500 text-xl font-medium font-['Lexend']">
+          <div className="self-stretch justify-start text-oonjai-green-500 text-2xl sm:text-4xl font-medium font-['Lexend']">
             What&apos;s Your Phone Number?
           </div>
           <p className="text-DarkGrey text-sm font-medium font-['Lexend']">
@@ -63,11 +65,20 @@ export default function PhoneStep({ onNext }: Props) {
         </div>
       </div>
 
-      <OJContinueButton
-        onClick={handleContinue}
-        disabled={!phone}
-        loading={loading}
-      />
-    </OnboardingShell>
+      <div className="flex flex-col gap-3">
+        <OJContinueButton
+          onClick={handleContinue}
+          disabled={!phone}
+        />
+        <button
+          type="button"
+          onClick={handleSwitchAccount}
+          className="flex items-center justify-center gap-2 w-full py-3 text-sm font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
+        >
+          <LogOut size={16} />
+          Switch Account
+        </button>
+      </div>
+    </>
   )
 }

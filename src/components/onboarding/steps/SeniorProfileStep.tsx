@@ -1,26 +1,33 @@
 // src/components/onboarding/steps/SeniorProfileStep.tsx
 "use client"
-import { useState, useRef } from "react"
+import React, { useState, useRef } from "react"
 import Image from "next/image"
-import OnboardingShell from "../OnboardingShell"
 import OJContinueButton from "../ui/OJContinueButton"
+import LocationPicker from "@/components/common/LocationPicker"
+import { submitOnboarding } from "@/lib/api/users"
+import { createSenior } from "@/lib/api/seniors"
+import type { OnboardingData } from "@/app/onboarding/page"
+import {
+  IndependentIcon, CaneIcon, WheelchairIcon, BedboundIcon,
+  HeartIcon, MetabolicIcon, RespiratoryIcon, BoneIcon, MentalIcon, BrainIcon,
+} from "@/components/icons/OnboardingIcons"
 
-interface Props { onNext: () => void }
+interface Props { onboardingData: OnboardingData; onNext: () => void }
 
 const MOBILITY_OPTIONS = [
-  { label: "Independent", icon: "/images/onboarding/icons/independent.svg" },
-  { label: "Require a cane", icon: "/images/onboarding/icons/cane.svg" },
-  { label: "Wheelchair", icon: "/images/onboarding/icons/wheelchair.svg" },
-  { label: "Bed Bound", icon: "/images/onboarding/icons/bedbound.svg" },
+  { label: "Independent", IconComponent: IndependentIcon },
+  { label: "Require a cane", IconComponent: CaneIcon },
+  { label: "Wheelchair", IconComponent: WheelchairIcon },
+  { label: "Bed Bound", IconComponent: BedboundIcon },
 ]
 
 const CHRONIC_OPTIONS = [
-  { label: "Cardiovascular Diseases", icon: "/images/onboarding/icons/heart.svg" },
-  { label: "Metabolic & Endocrine Disorders", icon: "/images/onboarding/icons/metabolic.svg" },
-  { label: "Respiratory Diseases", icon: "/images/onboarding/icons/Frame-2.svg" },
-  { label: "Musculoskeletal Conditions", icon: "/images/onboarding/icons/bone.svg" },
-  { label: "Mental Health Conditions", icon: "/images/onboarding/icons/mental.svg" },
-  { label: "Neurological Conditions", icon: "/images/onboarding/icons/brain.svg" },
+  { label: "Cardiovascular Diseases", IconComponent: HeartIcon },
+  { label: "Metabolic & Endocrine Disorders", IconComponent: MetabolicIcon },
+  { label: "Respiratory Diseases", IconComponent: RespiratoryIcon },
+  { label: "Musculoskeletal Conditions", IconComponent: BoneIcon },
+  { label: "Mental Health Conditions", IconComponent: MentalIcon },
+  { label: "Neurological Conditions", IconComponent: BrainIcon },
 ]
 
 function ProfileInput({
@@ -57,7 +64,7 @@ function DropdownSelect({
   label: string
   required?: boolean
   error?: string
-  options: { label: string; icon?: string }[]
+  options: { label: string; IconComponent?: React.ComponentType<{ className?: string; width?: number; height?: number }> }[]
   value: string
   onChange: (v: string) => void
 }) {
@@ -65,7 +72,7 @@ function DropdownSelect({
   const selectedOption = options.find((o) => o.label === value)
 
   return (
-    <div className="w-80 flex flex-col gap-1 relative">
+    <div className="w-full flex flex-col gap-1 relative">
       <label className="text-oonjai-green-500 text-base
       font-light font-['Lexend']">
         {label}{required && " *"}
@@ -73,21 +80,15 @@ function DropdownSelect({
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`w-80 h-9 pl-5 pr-3 py-5 bg-white rounded
+        className={`w-full sm:w-6/8 h-9 pl-5 pr-3 py-5 bg-white rounded
         outline outline-1 outline-offset-[-1px]
         ${error ? "outline-[#CF4538]" : "outline-[#b1b1b1]"}
         flex justify-between items-center gap-2.5 cursor-pointer
         transition-colors hover:outline-[#365C48]`}
       >
         <div className="flex items-center gap-3 min-w-0">
-          {selectedOption?.icon && (
-            <Image
-              src={selectedOption.icon}
-              alt={selectedOption.label}
-              width={20}
-              height={20}
-              className="shrink-0"
-            />
+          {selectedOption?.IconComponent && (
+            <selectedOption.IconComponent width={20} height={20} className="shrink-0" />
           )}
           <span className={`text-sm font-light font-['Lexend'] ${
             value ? "text-oonjai-green-500" : "text-[#b1b1b1]"
@@ -123,14 +124,8 @@ function DropdownSelect({
               ${value === o.label ? "bg-oonjai-green-50" : "bg-white"}`}
             >
               <div className="flex items-center gap-4">
-                {o.icon && (
-                  <Image
-                    src={o.icon}
-                    alt={o.label}
-                    width={20}
-                    height={20}
-                    className="shrink-0"
-                  />
+                {o.IconComponent && (
+                  <o.IconComponent width={20} height={20} className="shrink-0" />
                 )}
                 <span>{o.label}</span>
               </div>
@@ -153,18 +148,17 @@ function DropdownSelect({
   )
 }
 
-export default function SeniorProfileStep({ onNext }: Props) {
+export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
   const [photo, setPhoto]       = useState<string | null>(null)
   const [seniors, setSeniors]   = useState<Record<string, string>[]>([])
   const [form, setForm]         = useState({
     fullName: "", nickName: "", age: "",
     mobility: "", chronic: "", allergy: "",
     handicap: "", specialNeeds: "", emergencyNo: "",
-    hospital: "",
+    hospital: "", location: "",
   })
   const [errors, setErrors]     = useState<Record<string, string>>({})
   const [loading, setLoading]   = useState(false)
-  const [showMap, setShowMap]   = useState(false)
   const fileRef                 = useRef<HTMLInputElement>(null)
 
   const set = (k: string, v: string) => {
@@ -181,11 +175,29 @@ export default function SeniorProfileStep({ onNext }: Props) {
     return e
   }
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
-    setTimeout(() => { setLoading(false); onNext() }, 1500)
+    try {
+      // 1. Submit onboarding data (phone, relationship, goal, concerns)
+      const onboardingOk = await submitOnboarding(onboardingData)
+      if (!onboardingOk) { setErrors({ fullName: "Failed to save onboarding data." }); setLoading(false); return }
+
+      // 2. Create senior profile
+      const senior = await createSenior({
+        fullname: form.fullName,
+        dateOfBirth: form.age,
+        mobilityLevel: form.mobility,
+        healthNote: [form.chronic, form.allergy, form.handicap, form.specialNeeds].filter(Boolean).join("; "),
+      })
+      if (!senior) { setErrors({ fullName: "Failed to create senior profile." }); setLoading(false); return }
+
+      onNext()
+    } catch {
+      setErrors({ fullName: "Something went wrong. Please try again." })
+      setLoading(false)
+    }
   }
 
   const handleAddAnother = () => {
@@ -196,7 +208,7 @@ export default function SeniorProfileStep({ onNext }: Props) {
       fullName: "", nickName: "", age: "",
       mobility: "", chronic: "", allergy: "",
       handicap: "", specialNeeds: "", emergencyNo: "",
-      hospital: "",
+      hospital: "", location: "",
     })
     setPhoto(null)
     setErrors({})
@@ -209,14 +221,7 @@ export default function SeniorProfileStep({ onNext }: Props) {
   }
 
   return (
-    <OnboardingShell
-      step={5}
-      illustration=""
-      illustrationW={0}
-      illustrationH={0}
-      illustrationPos=""
-      centered={true}
-    >
+    <>
       {/* Outer — full width */}
       <div className="flex flex-col items-center gap-3 w-full">
 
@@ -225,7 +230,7 @@ export default function SeniorProfileStep({ onNext }: Props) {
 
           <h2 className="w-full text-center
           text-oonjai-green-500 text-3xl font-medium font-['Lexend']">
-            Set Up Your<br />Senior Profile
+            Set Up Your<br className="sm:hidden block"/> Senior Profile
           </h2>
 
           {/* Saved seniors list */}
@@ -354,7 +359,7 @@ export default function SeniorProfileStep({ onNext }: Props) {
             { key: "emergencyNo",  label: "Second Emergency Number",    full: true  },
             { key: "hospital",     label: "Preferred Hospital",         full: true  },
           ].map(f => (
-            <div key={f.key} className={f.full ? "w-full" : "w-80"}>
+            <div key={f.key} className={f.full ? "w-full" : "w-full sm:w-6/8"}>
               <ProfileInput
                 label={f.label}
                 placeholder=""
@@ -365,55 +370,11 @@ export default function SeniorProfileStep({ onNext }: Props) {
           ))}
 
           {/* Location */}
-          <div className="w-80 flex flex-col gap-1 mb-4">
-            <label className="text-oonjai-green-500 text-base
-            font-light font-['Lexend']">Location</label>
-
-            <button
-              type="button"
-              onClick={() => setShowMap(m => !m)}
-              className="w-80 h-9 pl-5 pr-3 py-5 bg-white rounded
-              outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
-              flex justify-between items-center cursor-pointer
-              hover:outline-[#365C48] transition-colors"
-            >
-              <span className="text-oonjai-green-500 text-sm
-              font-light font-['Lexend']">
-                Select From Map
-              </span>
-              <svg viewBox="0 0 24 24" fill="none"
-              className="w-5 h-5 text-oonjai-green-500">
-                <path d="M12 2C8.69 2 6 4.69 6 8c0 5.25 6 13 6 13s6-7.75 6-13c0-3.31-2.69-6-6-6z"
-                stroke="currentColor" strokeWidth="2"/>
-                <circle cx="12" cy="8" r="2" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </button>
-
-            {showMap && (
-              <div className="w-80 h-56 px-7 py-5 bg-white rounded
-              outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
-              flex flex-col gap-2.5">
-                <div className="px-3 py-1 rounded
-                outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
-                flex justify-between items-center">
-                  <span className="text-[#b1b1b1] text-xs
-                  font-light font-['Lexend']">
-                    Search Your Location
-                  </span>
-                  <svg viewBox="0 0 24 24" fill="none"
-                  className="w-5 h-5 text-[#b1b1b1]">
-                    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/>
-                    <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                </div>
-                <div className="flex-1 rounded
-                outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
-                bg-oonjai-cream-100 flex items-center justify-center
-                text-[#b1b1b1] text-xs font-['Lexend']">
-                  Map view
-                </div>
-              </div>
-            )}
+          <div className="w-full mb-4">
+            <LocationPicker
+              value={form.location}
+              onChange={(location) => set("location", location)}
+            />
           </div>
 
           {/* Add Another Senior */}
@@ -448,6 +409,6 @@ export default function SeniorProfileStep({ onNext }: Props) {
         />
       </div>
 
-    </OnboardingShell>
+    </>
   )
 }
