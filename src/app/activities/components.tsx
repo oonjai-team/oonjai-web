@@ -484,26 +484,39 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
       transportLocation,
     })
 
-    if (bookingResult) {
+    if (bookingResult.ok) {
       // Step 2: Create checkout session → get redirect URL (simulated Stripe)
       const paymentMethod = payment === 'qr' ? 'qr_promptpay' : 'credit_card' as const
       const checkoutSession = await createCheckoutSession({
-        bookingId: bookingResult.bookingId,
-        amount: bookingResult.totalAmount,
+        bookingId: bookingResult.data.bookingId,
+        amount: bookingResult.data.totalAmount,
         currency: 'THB',
         method: paymentMethod,
       })
 
       if (checkoutSession) {
         // Store booking data for the confirmation page
-        sessionStorage.setItem('activitySession', JSON.stringify(bookingResult))
+        sessionStorage.setItem('activitySession', JSON.stringify(bookingResult.data))
         sessionStorage.setItem('activityBookingDetail', JSON.stringify(activity))
         // Step 3: Redirect to payment gateway
         window.location.href = checkoutSession.checkoutUrl
         return
       }
+      setCheckoutError('Unable to start payment session. Please try again.')
     } else {
-      setCheckoutError('Booking failed. The activity may be fully booked or not enough spots are available.')
+      // Translate backend error codes into friendly messages
+      const raw = bookingResult.message
+      let friendly = raw
+      if (raw.startsWith('DUPLICATE')) {
+        friendly = 'One or more selected seniors already have a booking for this activity.'
+      } else if (raw.startsWith('TIME_CONFLICT')) {
+        friendly = 'One or more selected seniors have another booking overlapping this activity.'
+      } else if (raw.startsWith('FULL')) {
+        friendly = 'This activity is fully booked.'
+      } else if (raw.toLowerCase().includes('transportlocation')) {
+        friendly = 'Please select a pick up / drop off location on the map.'
+      }
+      setCheckoutError(friendly)
     }
 
     setCheckoutLoading(false)

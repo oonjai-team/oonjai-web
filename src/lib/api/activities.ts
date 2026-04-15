@@ -97,14 +97,24 @@ export async function fetchActivityPrecautions(activityId: string): Promise<Seni
   return []
 }
 
-export async function createActivityBooking(payload: BookActivityPayload): Promise<ActivityBookingResponse | null> {
+export interface CreateBookingError {
+  ok: false
+  message: string
+}
+export interface CreateBookingOk {
+  ok: true
+  data: ActivityBookingResponse
+}
+export type CreateBookingResult = CreateBookingOk | CreateBookingError
+
+export async function createActivityBooking(payload: BookActivityPayload): Promise<CreateBookingResult> {
   const connector = getConnector()
   const res = await connector.POST<ActivityBookingResponse>(
     "bookings/activity",
     payload as unknown as Record<string, unknown>,
   )
   if (res.isSuccess() && res.payload) {
-    return res.payload
+    return { ok: true, data: res.payload }
   }
-  return null
+  return { ok: false, message: res.message || "Booking failed." }
 }
