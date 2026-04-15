@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3030';
+const API_URL = process.env.NEXT_PUBLIC_SERVICE_URL ?? 'http://localhost:3030';
 
 function CheckoutGatewayContent() {
   const searchParams = useSearchParams();

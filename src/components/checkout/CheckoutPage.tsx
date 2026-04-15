@@ -151,8 +151,17 @@ export default function CheckoutPage() {
         currency: booking.currency || "THB",
       })
 
-      if (!paymentResult) {
-        setError("Booking created but payment initiation failed. Please try again from your bookings page.")
+      if (!paymentResult.ok) {
+        const raw = paymentResult.message
+        let friendly = `Booking created but payment initiation failed: ${raw}. You can retry from your bookings page.`
+        if (raw.startsWith("CONFLICT")) {
+          friendly = "A payment was already started for this booking. Please check your bookings page."
+        } else if (raw.startsWith("BAD_REQUEST")) {
+          friendly = `Payment rejected: ${raw.replace(/^BAD_REQUEST:\s*/, "")}`
+        } else if (raw.startsWith("NOT_FOUND")) {
+          friendly = "Booking could not be found when initiating payment. Please try again."
+        }
+        setError(friendly)
         setLoading(false)
         return
       }

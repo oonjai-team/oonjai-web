@@ -17,7 +17,11 @@ export interface PaymentResponse {
   bookingId: string
 }
 
-export async function initiatePayment(bookingId: string, payload: InitiatePaymentPayload): Promise<PaymentResponse | null> {
+export type InitiatePaymentResult =
+  | { ok: true; data: PaymentResponse }
+  | { ok: false; message: string }
+
+export async function initiatePayment(bookingId: string, payload: InitiatePaymentPayload): Promise<InitiatePaymentResult> {
   const connector = getConnector()
   const res = await connector.POST<PaymentResponse>(
     `bookings/${bookingId}/payment`,
@@ -25,9 +29,9 @@ export async function initiatePayment(bookingId: string, payload: InitiatePaymen
   )
 
   if (res.isSuccess() && res.payload) {
-    return res.payload
+    return { ok: true, data: res.payload }
   }
-  return null
+  return { ok: false, message: res.message || "Payment initiation failed." }
 }
 
 export async function getPaymentStatus(bookingId: string): Promise<PaymentResponse | null> {

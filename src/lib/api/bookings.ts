@@ -26,7 +26,7 @@ export interface BookingResponse {
   id: string
   adultChildId: string
   seniorId: string
-  caretakerId: string
+  caretakerId: string | null
   serviceType: string
   status: string
   startDate: string
