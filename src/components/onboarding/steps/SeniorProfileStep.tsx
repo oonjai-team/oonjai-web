@@ -6,6 +6,7 @@ import OJContinueButton from "../ui/OJContinueButton"
 import LocationPicker from "@/components/common/LocationPicker"
 import { submitOnboarding } from "@/lib/api/users"
 import { createSenior } from "@/lib/api/seniors"
+import { getAgeFromDOB } from "@/lib/utils"
 import type { OnboardingData } from "@/app/onboarding/page"
 import {
   IndependentIcon, CaneIcon, WheelchairIcon, BedboundIcon,
@@ -152,7 +153,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
   const [photo, setPhoto]       = useState<string | null>(null)
   const [seniors, setSeniors]   = useState<Record<string, string>[]>([])
   const [form, setForm]         = useState({
-    fullName: "", nickName: "", age: "",
+    fullName: "", nickName: "", dateOfBirth: "",
     mobility: "", chronic: "", allergy: "",
     handicap: "", specialNeeds: "", emergencyNo: "",
     hospital: "", location: "",
@@ -169,8 +170,16 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
   const validate = () => {
     const e: Record<string, string> = {}
     if (!form.fullName.trim()) e.fullName = "Full name is required."
-    if (!form.age.trim())      e.age      = "Age is required."
-    if (Number(form.age) < 0)  e.age      = "Age cannot be negative."
+    if (!form.dateOfBirth.trim()) {
+      e.dateOfBirth = "Date of birth is required."
+    } else {
+      const birth = new Date(form.dateOfBirth)
+      if (isNaN(birth.getTime())) {
+        e.dateOfBirth = "Please enter a valid date."
+      } else if (birth.getTime() > Date.now()) {
+        e.dateOfBirth = "Date of birth cannot be in the future."
+      }
+    }
     if (!form.mobility)        e.mobility = "Mobility level is required."
     return e
   }
@@ -187,7 +196,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
       // 2. Create senior profile
       const senior = await createSenior({
         fullname: form.fullName,
-        dateOfBirth: form.age,
+        dateOfBirth: form.dateOfBirth,
         mobilityLevel: form.mobility,
         healthNote: [form.chronic, form.allergy, form.handicap, form.specialNeeds].filter(Boolean).join("; "),
       })
@@ -205,7 +214,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
     if (Object.keys(e).length) { setErrors(e); return }
     setSeniors(s => [...s, form])
     setForm({
-      fullName: "", nickName: "", age: "",
+      fullName: "", nickName: "", dateOfBirth: "",
       mobility: "", chronic: "", allergy: "",
       handicap: "", specialNeeds: "", emergencyNo: "",
       hospital: "", location: "",
@@ -251,7 +260,10 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
                       <p className="text-oonjai-green-500 text-sm
                       font-medium font-['Lexend']">{s.fullName}</p>
                       <p className="text-[#b1b1b1] text-xs font-light font-['Lexend']">
-                        {s.age} years old · {s.mobility || "No mobility info"}
+                        {(() => {
+                          const age = getAgeFromDOB(s.dateOfBirth)
+                          return age !== null ? `${age} years old` : "Age unknown"
+                        })()} · {s.mobility || "No mobility info"}
                       </p>
                     </div>
                   </div>
@@ -311,7 +323,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             onChange={e => set("fullName", e.target.value)}
           />
 
-          {/* Nick Name + Age row */}
+          {/* Nick Name + Date of Birth row */}
           <div className="flex justify-between items-start gap-4">
             <div className="flex-1">
               <ProfileInput
@@ -321,18 +333,22 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
                 onChange={e => set("nickName", e.target.value)}
               />
             </div>
-            <div className="w-32">
+            <div className="flex-1">
               <ProfileInput
-                label="Age" required
-                placeholder=""
-                type="number"
-                min="0"
-                value={form.age}
-                error={errors.age}
-                onChange={e => set("age", e.target.value)}
+                label="Date of Birth" required
+                type="date"
+                max={new Date().toISOString().split("T")[0]}
+                value={form.dateOfBirth}
+                error={errors.dateOfBirth}
+                onChange={e => set("dateOfBirth", e.target.value)}
               />
             </div>
           </div>
+          {form.dateOfBirth && getAgeFromDOB(form.dateOfBirth) !== null && (
+            <p className="text-xs text-[#b1b1b1] font-light font-['Lexend'] -mt-1">
+              Age: {getAgeFromDOB(form.dateOfBirth)} years
+            </p>
+          )}
 
           {/* Mobility Level dropdown */}
           <DropdownSelect

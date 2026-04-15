@@ -387,7 +387,8 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
   const [seniors, setSeniors] = useState<SeniorProfile[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [seniorsLoading, setSeniorsLoading] = useState(true)
-  const [transport, setTransport] = useState('self');
+  const [pickupMode, setPickupMode] = useState<'self' | 'arrange'>('self');
+  const [dropoffMode, setDropoffMode] = useState<'self' | 'arrange'>('self');
   const [pickupLocation, setPickupLocation] = useState('');
   const [dropoffLocation, setDropoffLocation] = useState('');
   const [payment, setPayment] = useState('qr');
@@ -398,7 +399,7 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
   const [conflictSeniorIds, setConflictSeniorIds] = useState<Set<string>>(new Set())
 
   const [newFullName, setNewFullName] = useState('');
-  const [newAge, setNewAge] = useState('');
+  const [newDob, setNewDob] = useState('');
   const [newMobility, setNewMobility] = useState('');
   const [newHealthNote, setNewHealthNote] = useState('');
   const [newLocation, setNewLocation] = useState('');
@@ -432,7 +433,13 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
   const handleAddSenior = async () => {
     const errors: Record<string, string> = {}
     if (!newFullName.trim()) errors.fullName = "Full name is required."
-    if (!newAge.trim()) errors.age = "Age is required."
+    if (!newDob.trim()) {
+      errors.dateOfBirth = "Date of birth is required."
+    } else {
+      const birth = new Date(newDob)
+      if (isNaN(birth.getTime())) errors.dateOfBirth = "Please enter a valid date."
+      else if (birth.getTime() > Date.now()) errors.dateOfBirth = "Date of birth cannot be in the future."
+    }
     if (!newMobility) errors.mobility = "Mobility level is required."
     if (Object.keys(errors).length) { setFormErrors(errors); return }
 
@@ -445,7 +452,7 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
     ].filter(Boolean)
     const payload: CreateSeniorPayload = {
       fullname: newFullName.trim(),
-      dateOfBirth: newAge.trim(),
+      dateOfBirth: newDob.trim(),
       mobilityLevel: newMobility,
       healthNote: healthNoteParts.length ? healthNoteParts.join(' | ') : undefined,
     }
@@ -454,7 +461,7 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
       setSeniors(prev => [...prev, created])
       setSelectedIds(prev => new Set(prev).add(created.id))
       setShowAddForm(false)
-      setNewFullName(''); setNewAge(''); setNewMobility(''); setNewHealthNote(''); setNewLocation('');
+      setNewFullName(''); setNewDob(''); setNewMobility(''); setNewHealthNote(''); setNewLocation('');
       setFormErrors({})
     }
     setAddLoading(false)
@@ -473,14 +480,13 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
     setCheckoutLoading(true)
     setCheckoutError('')
 
-    // Step 1: Create booking(s) via BookingService (status: CREATED, not paid)
-    const transportLocation =
-      transport === 'pickup' ? pickupLocation :
-      transport === 'dropoff' ? dropoffLocation :
-      undefined
-
-    if ((transport === 'pickup' || transport === 'dropoff') && !transportLocation) {
-      setCheckoutError(`Please select a ${transport === 'pickup' ? 'pick up' : 'drop off'} location.`)
+    if (pickupMode === 'arrange' && !pickupLocation) {
+      setCheckoutError('Please select a pick up location.')
+      setCheckoutLoading(false)
+      return
+    }
+    if (dropoffMode === 'arrange' && !dropoffLocation) {
+      setCheckoutError('Please select a drop off location.')
       setCheckoutLoading(false)
       return
     }
@@ -488,8 +494,10 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
     const bookingResult = await createActivityBooking({
       activityId: String(activity.id),
       seniorIds: Array.from(selectedIds),
-      transport: transport as 'self' | 'pickup' | 'dropoff',
-      transportLocation,
+      pickupMode,
+      pickupLocation: pickupMode === 'arrange' ? pickupLocation : undefined,
+      dropoffMode,
+      dropoffLocation: dropoffMode === 'arrange' ? dropoffLocation : undefined,
     })
 
     if (bookingResult.ok) {
@@ -521,8 +529,10 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
         friendly = 'One or more selected seniors have another booking overlapping this activity.'
       } else if (raw.startsWith('FULL')) {
         friendly = `You've reached the maximum available seats for this activity. If you'd like to add another senior, please remove one of the currently selected seniors first.`
-      } else if (raw.toLowerCase().includes('transportlocation')) {
-        friendly = 'Please select a pick up / drop off location on the map.'
+      } else if (raw.toLowerCase().includes('pickuplocation')) {
+        friendly = 'Please select a pick up location on the map.'
+      } else if (raw.toLowerCase().includes('dropofflocation')) {
+        friendly = 'Please select a drop off location on the map.'
       }
       setCheckoutError(friendly)
     }
@@ -532,7 +542,10 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
 
   const selectedCount = selectedIds.size;
   const activityFee = activity.price * (selectedCount > 0 ? selectedCount : 1);
-  const transportFee = (transport === 'pickup' || transport === 'dropoff') ? 150 : 0;
+  const PICKUP_DROPOFF_FEE = 150;
+  const transportFee =
+    (pickupMode === 'arrange' ? PICKUP_DROPOFF_FEE : 0) +
+    (dropoffMode === 'arrange' ? PICKUP_DROPOFF_FEE : 0);
   const total = activityFee + transportFee;
 
   return (
@@ -680,11 +693,12 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
                       <label className="block text-xs font-semibold text-gray-600 mb-1">Date of Birth *</label>
                       <input
                         type="date"
-                        value={newAge}
-                        onChange={(e) => { setNewAge(e.target.value); setFormErrors(prev => { const n = {...prev}; delete n.age; return n }) }}
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-[#385C4B] text-sm ${formErrors.age ? 'border-red-400' : 'border-gray-300'}`}
+                        value={newDob}
+                        max={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => { setNewDob(e.target.value); setFormErrors(prev => { const n = {...prev}; delete n.dateOfBirth; return n }) }}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-[#385C4B] text-sm ${formErrors.dateOfBirth ? 'border-red-400' : 'border-gray-300'}`}
                       />
-                      {formErrors.age && <p className="text-xs text-red-500 mt-1">{formErrors.age}</p>}
+                      {formErrors.dateOfBirth && <p className="text-xs text-red-500 mt-1">{formErrors.dateOfBirth}</p>}
                     </div>
                     <div className="flex-1">
                       <label className="block text-xs font-semibold text-gray-600 mb-1">Mobility Level *</label>
@@ -720,7 +734,7 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
                   </div>
                   <div className="flex gap-3 pt-2">
                     <button
-                      onClick={() => { setShowAddForm(false); setFormErrors({}); setNewFullName(''); setNewAge(''); setNewMobility(''); setNewHealthNote(''); setNewLocation('') }}
+                      onClick={() => { setShowAddForm(false); setFormErrors({}); setNewFullName(''); setNewDob(''); setNewMobility(''); setNewHealthNote(''); setNewLocation('') }}
                       className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-semibold text-gray-600"
                     >
                       Cancel
@@ -745,59 +759,64 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
       </div>
 
       <div className="mb-8">
-        <h2 className="font-bold text-gray-900 mb-3 text-lg">Transportation</h2>
+        <h2 className="font-bold text-gray-900 mb-3 text-lg">Pick Up</h2>
         <div className="space-y-3">
-          <div 
-            onClick={() => setTransport('self')}
-            className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${transport === 'self' ? 'border-[#385C4B] bg-[#F4F9F6]' : 'border-gray-200 bg-white'}`}
+          <div
+            onClick={() => setPickupMode('self')}
+            className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${pickupMode === 'self' ? 'border-[#385C4B] bg-[#F4F9F6]' : 'border-gray-200 bg-white'}`}
           >
             <span className="text-sm font-semibold text-gray-800">Self Travel</span>
-            {transport === 'self' ? <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> : <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>}
+            {pickupMode === 'self' ? <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> : <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>}
           </div>
 
-          <div className={`rounded-xl border transition-colors overflow-hidden ${transport === 'pickup' ? 'border-[#385C4B] bg-white' : 'border-gray-200 bg-white'}`}>
-            <div onClick={() => setTransport('pickup')} className={`flex items-center justify-between p-4 cursor-pointer ${transport === 'pickup' ? 'bg-[#F4F9F6]' : ''}`}>
+          <div className={`rounded-xl border transition-colors overflow-hidden ${pickupMode === 'arrange' ? 'border-[#385C4B] bg-white' : 'border-gray-200 bg-white'}`}>
+            <div onClick={() => setPickupMode('arrange')} className={`flex items-center justify-between p-4 cursor-pointer ${pickupMode === 'arrange' ? 'bg-[#F4F9F6]' : ''}`}>
               <span className="text-sm font-semibold text-gray-800">Arrange a Pick Up</span>
-              {transport === 'pickup' ? <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> : <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>}
+              {pickupMode === 'arrange' ? <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> : <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>}
             </div>
-            
-            {transport === 'pickup' && (
+
+            {pickupMode === 'arrange' && (
               <div className="p-4 border-t border-gray-100">
                 <h3 className="text-sm font-bold text-gray-900 mb-3">Select Your Pick Up Location</h3>
                 <LocationPicker
                   value={pickupLocation}
                   onChange={(loc) => setPickupLocation(loc)}
                 />
-                <div className="flex justify-between text-xs text-gray-600 mt-4 mb-2">
-                  <span>Pick Up Time (based on Google Maps Calculation)</span>
-                  <span className="font-bold text-gray-900">5:30 PM</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-600">
+                <div className="flex justify-between text-xs text-gray-600 mt-4">
                   <span>Additional Fees</span>
                   <span className="font-bold text-gray-900">150 Baht</span>
                 </div>
               </div>
             )}
           </div>
+        </div>
+      </div>
 
-          <div className={`rounded-xl border transition-colors overflow-hidden ${transport === 'dropoff' ? 'border-[#385C4B] bg-white' : 'border-gray-200 bg-white'}`}>
-            <div onClick={() => setTransport('dropoff')} className={`flex items-center justify-between p-4 cursor-pointer ${transport === 'dropoff' ? 'bg-[#F4F9F6]' : ''}`}>
+      <div className="mb-8">
+        <h2 className="font-bold text-gray-900 mb-3 text-lg">Drop Off</h2>
+        <div className="space-y-3">
+          <div
+            onClick={() => setDropoffMode('self')}
+            className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${dropoffMode === 'self' ? 'border-[#385C4B] bg-[#F4F9F6]' : 'border-gray-200 bg-white'}`}
+          >
+            <span className="text-sm font-semibold text-gray-800">Self Travel</span>
+            {dropoffMode === 'self' ? <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> : <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>}
+          </div>
+
+          <div className={`rounded-xl border transition-colors overflow-hidden ${dropoffMode === 'arrange' ? 'border-[#385C4B] bg-white' : 'border-gray-200 bg-white'}`}>
+            <div onClick={() => setDropoffMode('arrange')} className={`flex items-center justify-between p-4 cursor-pointer ${dropoffMode === 'arrange' ? 'bg-[#F4F9F6]' : ''}`}>
               <span className="text-sm font-semibold text-gray-800">Arrange a Drop Off</span>
-              {transport === 'dropoff' ? <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> : <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>}
+              {dropoffMode === 'arrange' ? <svg className="w-6 h-6 text-[#385C4B]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> : <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>}
             </div>
-            
-            {transport === 'dropoff' && (
+
+            {dropoffMode === 'arrange' && (
               <div className="p-4 border-t border-gray-100">
                 <h3 className="text-sm font-bold text-gray-900 mb-3">Select Your Drop Off Location</h3>
                 <LocationPicker
                   value={dropoffLocation}
                   onChange={(loc) => setDropoffLocation(loc)}
                 />
-                <div className="flex justify-between text-xs text-gray-600 mt-4 mb-2">
-                  <span>Drop Off Time (based on Google Maps Calculation)</span>
-                  <span className="font-bold text-gray-900">7:30 PM</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-600">
+                <div className="flex justify-between text-xs text-gray-600 mt-4">
                   <span>Additional Fees</span>
                   <span className="font-bold text-gray-900">150 Baht</span>
                 </div>

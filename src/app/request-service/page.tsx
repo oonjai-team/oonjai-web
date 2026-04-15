@@ -20,9 +20,10 @@ import {
 import LocationPicker from '@/components/common/LocationPicker';
 import { Header } from '@/components/common/Header';
 import { RequestServiceSkeleton } from '@/components/common/Skeleton';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchBookings, type BookingResponse } from '@/lib/api/bookings';
 import { fetchSeniors, fetchSeniorServiceConflicts, type SeniorProfile } from '@/lib/api/seniors';
+import { getAgeFromDOB } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/AuthContext';
 
 const SERVICE_TYPE_MAP: Record<string, string> = {
@@ -31,8 +32,11 @@ const SERVICE_TYPE_MAP: Record<string, string> = {
   "Outings": "outings",
 }
 
+const FORM_DRAFT_KEY = "requestServiceFormDraft";
+
 export default function RequestServicePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [view, setView] = useState<'list' | 'form'>('list');
   const [activeRequests, setActiveRequests] = useState<BookingResponse[]>([]);
@@ -126,14 +130,7 @@ export default function RequestServicePage() {
 
   const selectedSenior = seniors.find(s => s.id === formData.seniorId);
 
-  const getAge = (dob: string) => {
-    const birth = new Date(dob);
-    if (isNaN(birth.getTime())) return null;
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
-    return age > 0 && age < 150 ? age : null;
-  };
+  const getAge = getAgeFromDOB;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -5,6 +5,7 @@ import { Header } from "@/components/common/Header"
 import { SeniorProfileSkeleton } from "@/components/common/Skeleton"
 import { useAuth } from "@/lib/auth/AuthContext"
 import { fetchSeniors, type SeniorProfile } from "@/lib/api/seniors"
+import { getAgeFromDOB, formatDOB } from "@/lib/utils"
 
 /* ── Icons ── */
 function PersonIcon() {
@@ -259,7 +260,10 @@ export default function ProfilePage() {
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-2 border-b border-[#EBF1ED]">
                         <span className="text-[#4D4D4D] text-sm font-normal font-['Lexend'] sm:w-32 flex-shrink-0">Date of Birth</span>
                         <span className="text-[#0E211A] text-sm font-normal font-['Lexend']">
-                          {senior.dateOfBirth || "—"}
+                          {formatDOB(senior.dateOfBirth)}
+                          {getAgeFromDOB(senior.dateOfBirth) !== null && (
+                            <span className="text-[#4D4D4D] ml-2">({getAgeFromDOB(senior.dateOfBirth)} yrs)</span>
+                          )}
                         </span>
                       </div>
 

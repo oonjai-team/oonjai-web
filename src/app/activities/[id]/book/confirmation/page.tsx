@@ -45,9 +45,12 @@ export default function ActivityBookingConfirmationPage() {
     );
   }
 
-  const transportLabel =
-    session.transport === 'pickup' ? 'Arranged Pick Up' :
-    session.transport === 'dropoff' ? 'Arranged Drop Off' : 'Self Travel';
+  const pickupLabel = session.pickupMode === 'arrange'
+    ? `Arranged${session.pickupLocation ? ` — ${session.pickupLocation}` : ''}`
+    : 'Self Travel';
+  const dropoffLabel = session.dropoffMode === 'arrange'
+    ? `Arranged${session.dropoffLocation ? ` — ${session.dropoffLocation}` : ''}`
+    : 'Self Travel';
 
   // Payment method is not returned from booking response, read from sessionStorage if needed
 
@@ -118,8 +121,12 @@ export default function ActivityBookingConfirmationPage() {
               <p className="text-sm font-medium text-gray-900">{session.seniorIds.length} Senior{session.seniorIds.length > 1 ? 's' : ''}</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-gray-500 tracking-wider uppercase mb-1">Transportation</p>
-              <p className="text-sm font-medium text-gray-900">{transportLabel}</p>
+              <p className="text-[10px] font-bold text-gray-500 tracking-wider uppercase mb-1">Pick Up</p>
+              <p className="text-sm font-medium text-gray-900">{pickupLabel}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-gray-500 tracking-wider uppercase mb-1">Drop Off</p>
+              <p className="text-sm font-medium text-gray-900">{dropoffLabel}</p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-gray-500 tracking-wider uppercase mb-1">Status</p>

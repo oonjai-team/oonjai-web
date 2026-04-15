@@ -42,8 +42,10 @@ export async function fetchActivityById(id: string): Promise<ActivityData | null
 export interface BookActivityPayload {
   activityId: string
   seniorIds: string[]
-  transport: "self" | "pickup" | "dropoff"
-  transportLocation?: string
+  pickupMode: "self" | "arrange"
+  pickupLocation?: string
+  dropoffMode: "self" | "arrange"
+  dropoffLocation?: string
   note?: string
 }
 
@@ -51,7 +53,10 @@ export interface ActivityBookingResponse {
   bookingId: string
   activityId: string
   seniorIds: string[]
-  transport: string
+  pickupMode: string
+  pickupLocation?: string
+  dropoffMode: string
+  dropoffLocation?: string
   activityFee: number
   transportFee: number
   totalAmount: number
