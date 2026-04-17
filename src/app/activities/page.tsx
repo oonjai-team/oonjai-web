@@ -22,6 +22,7 @@ function buildParams(filters: FilterState): ActivityFilterParams {
 
 export default function MarketplacePage() {
   const [activities, setActivities] = useState<ActivityData[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
@@ -44,10 +45,11 @@ export default function MarketplacePage() {
     const t = setTimeout(() => {
       const base = buildParams(filters)
       fetchActivities({ ...base, limit: PAGE_SIZE, offset: 0 })
-        .then(list => {
+        .then(({ activities: list, total: t }) => {
           if (reqId !== requestIdRef.current) return // superseded by a newer request
           setActivities(list)
-          setHasMore(list.length === PAGE_SIZE)
+          setTotal(t)
+          setHasMore(list.length < t)
         })
         .finally(() => {
           if (reqId === requestIdRef.current) setLoading(false)
@@ -61,15 +63,19 @@ export default function MarketplacePage() {
     const reqId = requestIdRef.current
     setLoadingMore(true)
     const base = buildParams(filters)
-    const next = await fetchActivities({
+    const { activities: next, total: t } = await fetchActivities({
       ...base,
       limit: PAGE_SIZE,
       offset: activities.length,
     })
     // Drop the response if the user has since changed filters.
     if (reqId !== requestIdRef.current) return
-    setActivities(prev => [...prev, ...next])
-    setHasMore(next.length === PAGE_SIZE)
+    setActivities(prev => {
+      const merged = [...prev, ...next]
+      setHasMore(merged.length < t)
+      return merged
+    })
+    setTotal(t)
     setLoadingMore(false)
   }, [filters, activities.length, hasMore, loading, loadingMore])
 
@@ -116,6 +122,11 @@ export default function MarketplacePage() {
           </div>
         ) : (
           <>
+            <p className="text-xs md:text-sm text-[#385C4B] opacity-70 mb-4">
+              Showing <span className="font-semibold">{activities.length}</span> of{' '}
+              <span className="font-semibold">{total}</span>{' '}
+              {total === 1 ? 'activity' : 'activities'}
+            </p>
             <div className="flex flex-wrap gap-6 justify-center sm:justify-start">
               {activities.map((activity) => (
                 <ActivityCard key={activity.id} imageUrl={activity.images[0]} {...activity} />

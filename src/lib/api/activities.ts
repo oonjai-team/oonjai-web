@@ -31,7 +31,12 @@ export interface ActivityFilterParams {
   offset?: number
 }
 
-export async function fetchActivities(filter: ActivityFilterParams = {}): Promise<ActivityData[]> {
+export interface ActivityListResult {
+  activities: ActivityData[]
+  total: number
+}
+
+export async function fetchActivities(filter: ActivityFilterParams = {}): Promise<ActivityListResult> {
   const connector = getConnector()
   const params: Record<string, string> = {}
   if (filter.search) params.search = filter.search
@@ -41,11 +46,14 @@ export async function fetchActivities(filter: ActivityFilterParams = {}): Promis
   if (filter.priceMax !== undefined) params.priceMax = String(filter.priceMax)
   if (filter.limit !== undefined) params.limit = String(filter.limit)
   if (filter.offset !== undefined) params.offset = String(filter.offset)
-  const res = await connector.GET<ActivityData[]>("activities", params, {}, true)
+  const res = await connector.GET<ActivityListResult>("activities", params, {}, true)
   if (res.isSuccess() && res.payload) {
-    return res.payload
+    return {
+      activities: res.payload.activities ?? [],
+      total: res.payload.total ?? 0,
+    }
   }
-  return []
+  return { activities: [], total: 0 }
 }
 
 export async function fetchActivityById(id: string): Promise<ActivityData | null> {

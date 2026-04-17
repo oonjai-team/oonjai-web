@@ -23,7 +23,7 @@ export default function ActivityDetailsPage({ params }: { params: Promise<{ id: 
       fetchActivities(),
     ]).then(([act, all]) => {
       setActivity(act)
-      setRelated(all.filter(a => a.id !== resolvedParams.id).slice(0, 4))
+      setRelated(all.activities.filter(a => a.id !== resolvedParams.id).slice(0, 4))
     }).finally(() => setLoading(false))
   }, [resolvedParams.id])
 
