@@ -21,9 +21,27 @@ export interface ActivityData {
   images: string[]
 }
 
-export async function fetchActivities(): Promise<ActivityData[]> {
+export interface ActivityFilterParams {
+  search?: string
+  category?: string | null
+  location?: string | null
+  priceMin?: number
+  priceMax?: number
+  limit?: number
+  offset?: number
+}
+
+export async function fetchActivities(filter: ActivityFilterParams = {}): Promise<ActivityData[]> {
   const connector = getConnector()
-  const res = await connector.GET<ActivityData[]>("activities", undefined, {}, true)
+  const params: Record<string, string> = {}
+  if (filter.search) params.search = filter.search
+  if (filter.category) params.category = filter.category
+  if (filter.location) params.location = filter.location
+  if (filter.priceMin !== undefined) params.priceMin = String(filter.priceMin)
+  if (filter.priceMax !== undefined) params.priceMax = String(filter.priceMax)
+  if (filter.limit !== undefined) params.limit = String(filter.limit)
+  if (filter.offset !== undefined) params.offset = String(filter.offset)
+  const res = await connector.GET<ActivityData[]>("activities", params, {}, true)
   if (res.isSuccess() && res.payload) {
     return res.payload
   }
