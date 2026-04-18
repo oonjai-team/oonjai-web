@@ -15,10 +15,18 @@ interface NominatimResult {
 interface LocationPickerProps {
   value: string
   onChange: (_location: string, _lat?: number, _lon?: number) => void
+  required?: boolean
+  error?: string
 }
 
-export default function LocationPicker({ value, onChange }: LocationPickerProps) {
+export default function LocationPicker({ value, onChange, required, error }: LocationPickerProps) {
   const [query, setQuery] = useState(value)
+
+  // Keep the input in sync when the parent resets or prefills the value
+  // (e.g. "Add Another Senior" carries the previous location forward).
+  useEffect(() => {
+    setQuery(value)
+  }, [value])
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([])
   const [searching, setSearching] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -118,7 +126,9 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
 
   return (
     <div ref={containerRef}>
-      <label className="block text-xs font-bold text-gray-800 mb-2">Location</label>
+      <label className="block text-xs font-bold text-gray-800 mb-2">
+        Location{required && " *"}
+      </label>
 
       {/* Search input — z-index above Leaflet's stacking context */}
       <div className="relative mb-3 z-10">
@@ -128,7 +138,11 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
           value={query}
           onChange={handleInputChange}
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-          className="w-full border border-gray-300 rounded-xl py-3 pl-4 pr-16 text-sm font-medium focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40]"
+          className={`w-full border rounded-xl py-3 pl-4 pr-16 text-sm font-medium focus:outline-none focus:ring-1 ${
+            error
+              ? "border-[#CF4538] focus:border-[#CF4538] focus:ring-[#CF4538]"
+              : "border-gray-300 focus:border-[#3A5A40] focus:ring-[#3A5A40]"
+          }`}
         />
         <div className="absolute right-3 top-2.5 flex items-center gap-1">
           {searching && <Loader2 size={16} className="text-gray-400 animate-spin" />}
@@ -196,6 +210,10 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
           <MapPin size={12} />
           <span className="truncate">{query}</span>
         </div>
+      )}
+
+      {error && (
+        <p className="mt-2 text-xs text-[#CF4538] font-['Lexend']">⚠ {error}</p>
       )}
 
       {/* ── Expanded Map Modal ── */}

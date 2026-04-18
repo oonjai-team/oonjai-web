@@ -234,11 +234,13 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     setSeniors(s => [...s, form])
+    // Carry the home location forward — most households have one address,
+    // so defaulting it saves typing. The user can still change it.
     setForm({
       fullName: "", nickName: "", dateOfBirth: "",
       mobility: "", chronic: "", allergy: "",
       handicap: "", specialNeeds: "", emergencyNo: "",
-      hospital: "", location: "",
+      hospital: "", location: form.location,
     })
     setPhoto(null)
     setErrors({})
@@ -411,6 +413,8 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             <LocationPicker
               value={form.location}
               onChange={(location) => set("location", location)}
+              required
+              error={errors.location}
             />
           </div>
 
