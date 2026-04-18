@@ -26,6 +26,9 @@ export default function ConcernsStep({ onNext }: Props) {
         text-2xl sm:text-4xl font-medium font-['Lexend']">
           What&apos;s Your Main Concern When The Senior Is Alone?
         </h2>
+        <p className="text-zinc-500 text-sm font-light font-['Lexend']">
+          Select all that apply.
+        </p>
 
         {/* Multi-select grid */}
         <div className="grid grid-cols-2 gap-3">

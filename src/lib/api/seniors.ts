@@ -7,6 +7,7 @@ export interface SeniorProfile {
   dateOfBirth: string
   mobilityLevel: string
   healthNote: string
+  homeLocation: string
   createdAt: string
 }
 
@@ -14,6 +15,7 @@ export interface CreateSeniorPayload {
   fullname: string
   dateOfBirth: string
   mobilityLevel: string
+  homeLocation: string
   healthNote?: string
 }
 

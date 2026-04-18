@@ -441,20 +441,16 @@ export const BookingForm = ({ activity }: BookingFormProps) => {
       else if (birth.getTime() > Date.now()) errors.dateOfBirth = "Date of birth cannot be in the future."
     }
     if (!newMobility) errors.mobility = "Mobility level is required."
+    if (!newLocation.trim()) errors.location = "Home location is required."
     if (Object.keys(errors).length) { setFormErrors(errors); return }
 
     setAddLoading(true)
-    // Fold the picked home address into the health note so it's preserved
-    // without requiring a schema change.
-    const healthNoteParts = [
-      newHealthNote.trim(),
-      newLocation.trim() ? `Home: ${newLocation.trim()}` : '',
-    ].filter(Boolean)
     const payload: CreateSeniorPayload = {
       fullname: newFullName.trim(),
       dateOfBirth: newDob.trim(),
       mobilityLevel: newMobility,
-      healthNote: healthNoteParts.length ? healthNoteParts.join(' | ') : undefined,
+      homeLocation: newLocation.trim(),
+      healthNote: newHealthNote.trim() || undefined,
     }
     const created = await createSenior(payload)
     if (created) {

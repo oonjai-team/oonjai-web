@@ -163,6 +163,12 @@ export default function ProfilePage() {
 
             <div className="border-t border-[#EBF1ED]">
               <DetailRow label="Email">{user?.email}</DetailRow>
+              <DetailRow label="Phone">
+                <div className="flex items-center gap-2">
+                  <PhoneIcon />
+                  <span>{user?.phone || "—"}</span>
+                </div>
+              </DetailRow>
               <DetailRow label="Member Since">
                 {user?.createdAt
                   ? new Date(user.createdAt.timeInMil).toLocaleDateString("en-US", {
@@ -177,13 +183,6 @@ export default function ProfilePage() {
           {ac && (
             <div className="bg-white rounded-2xl shadow-[0px_4px_16px_0px_rgba(0,0,0,0.08)] p-6">
               <SectionHeader icon={<HeartIcon />} title="Care Profile" />
-
-              <DetailRow label="Phone">
-                <div className="flex items-center gap-2">
-                  <PhoneIcon />
-                  <span>{ac.phone}</span>
-                </div>
-              </DetailRow>
 
               <DetailRow label="Relationship">
                 {RELATIONSHIP_LABELS[ac.relationship] || ac.relationship}

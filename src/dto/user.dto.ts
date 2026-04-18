@@ -1,7 +1,6 @@
 import {TimestampType} from "@dto/timestamp"
 
 export interface AdultChildAttributes {
-  phone: string
   relationship: string
   goal: string
   concerns: string[]
@@ -12,6 +11,7 @@ export interface UserDTO {
   email: string
   firstname: string
   lastname: string
+  phone: string
   createdAt: TimestampType
   role: string
   adultChild?: AdultChildAttributes

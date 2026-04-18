@@ -37,7 +37,7 @@ function isOnboarded(user: UserDTO | null): boolean {
   if (!user) return false
   const ac = user.adultChild
   if (!ac) return false
-  return !!(ac.phone && ac.relationship && ac.goal && ac.concerns?.length)
+  return !!(user.phone && ac.relationship && ac.goal && ac.concerns?.length)
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

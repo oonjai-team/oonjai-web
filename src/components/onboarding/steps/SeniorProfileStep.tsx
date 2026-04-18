@@ -181,26 +181,47 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
       }
     }
     if (!form.mobility)        e.mobility = "Mobility level is required."
+    if (!form.location.trim()) e.location = "Home location is required."
     return e
   }
 
   const handleFinish = async () => {
-    const e = validate()
-    if (Object.keys(e).length) { setErrors(e); return }
+    // Assemble the full list to create: everything queued via "Add Another
+    // Senior" plus the current form (when it has any data). If the form is
+    // empty AND nothing is queued, fall back to the normal required-fields
+    // validation so the user sees the usual errors.
+    const queued = [...seniors]
+    const formHasData = !!(form.fullName.trim() || form.dateOfBirth.trim() || form.mobility.trim())
+    if (formHasData) {
+      const e = validate()
+      if (Object.keys(e).length) { setErrors(e); return }
+      queued.push(form)
+    } else if (queued.length === 0) {
+      setErrors(validate())
+      return
+    }
+
     setLoading(true)
     try {
       // 1. Submit onboarding data (phone, relationship, goal, concerns)
       const onboardingOk = await submitOnboarding(onboardingData)
       if (!onboardingOk) { setErrors({ fullName: "Failed to save onboarding data." }); setLoading(false); return }
 
-      // 2. Create senior profile
-      const senior = await createSenior({
-        fullname: form.fullName,
-        dateOfBirth: form.dateOfBirth,
-        mobilityLevel: form.mobility,
-        healthNote: [form.chronic, form.allergy, form.handicap, form.specialNeeds].filter(Boolean).join("; "),
-      })
-      if (!senior) { setErrors({ fullName: "Failed to create senior profile." }); setLoading(false); return }
+      // 2. Create every queued senior profile
+      for (const s of queued) {
+        const senior = await createSenior({
+          fullname: s.fullName,
+          dateOfBirth: s.dateOfBirth,
+          mobilityLevel: s.mobility,
+          homeLocation: s.location,
+          healthNote: [s.chronic, s.allergy, s.handicap, s.specialNeeds].filter(Boolean).join("; "),
+        })
+        if (!senior) {
+          setErrors({ fullName: `Failed to create senior "${s.fullName}".` })
+          setLoading(false)
+          return
+        }
+      }
 
       onNext()
     } catch {

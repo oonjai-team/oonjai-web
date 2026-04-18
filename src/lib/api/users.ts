@@ -1,7 +1,6 @@
 import { getConnector } from "./index"
 
 export interface AdultChildPayload {
-  phone?: string
   relationship?: string
   goal?: string
   concerns?: string[]
@@ -11,6 +10,7 @@ export interface UpdateUserPayload {
   firstname?: string
   lastname?: string
   email?: string
+  phone?: string
   adultChild?: AdultChildPayload
 }
 
