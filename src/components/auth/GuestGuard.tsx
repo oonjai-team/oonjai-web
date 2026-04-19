@@ -14,7 +14,7 @@ export default function GuestGuard({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace(needsOnboarding ? "/onboarding" : "/booking")
+      router.replace(needsOnboarding ? "/onboarding" : "/activity-status")
     }
   }, [isAuthenticated, isLoading, needsOnboarding, router])
 
