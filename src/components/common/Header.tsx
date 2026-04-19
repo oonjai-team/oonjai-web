@@ -33,7 +33,7 @@ function Header() {
 
           {/* Logo */}
           <Link href="/" className="flex-shrink-0 relative w-24 h-8 md:w-28 md:h-10">
-            <Image src="/images/oonjai-logo.svg" alt="Oonjai Logo" fill className="object-contain" priority />
+            <Image src="/images/oonjai-logo.png" alt="Oonjai Logo" fill className="object-contain" priority />
           </Link>
 
           {/* Desktop Navigation */}

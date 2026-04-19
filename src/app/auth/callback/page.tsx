@@ -27,7 +27,7 @@ export default function OAuthCallbackPage() {
     if (isLoading) return;
 
     if (isAuthenticated) {
-      router.push(needsOnboarding ? "/onboarding" : "/booking");
+      router.push(needsOnboarding ? "/onboarding" : "/activity-status");
     } else {
       router.push("/auth/login");
     }

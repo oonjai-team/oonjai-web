@@ -12,7 +12,7 @@ export default function Navbar() {
           <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center gap-2">
               <Image 
-                src="/images/oonjai-logo.svg" 
+                src="/images/oonjai-logo.png"
                 alt="Oonjai Logo" 
                 width={100} 
                 height={32} 

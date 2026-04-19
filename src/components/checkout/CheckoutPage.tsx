@@ -111,14 +111,14 @@ export default function CheckoutPage() {
   const [error, setError] = useState("")
   const [{ caretaker, request }] = useState(getCheckoutInitialData)
 
-  const estimatedCost = caretaker && request
+  const { totalHours, estimatedCost } = caretaker && request
     ? (() => {
         const start = new Date(request.startDate)
         const end = new Date(request.endDate)
         const hours = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60)))
-        return hours * caretaker.hourlyRate
+        return { totalHours: hours, estimatedCost: hours * caretaker.hourlyRate }
       })()
-    : 0
+    : { totalHours: 0, estimatedCost: 0 }
 
   const handleCheckout = async () => {
     if (!caretaker || !request) return
@@ -324,6 +324,12 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-center">
                 <div className="h-px bg-slate-100 w-80" />
+              </div>
+              <div className="flex justify-between items-center px-2">
+                <span className="text-[#4D4D4D] text-sm font-normal font-['Lexend']">Total Hours</span>
+                <span className="text-[#0E211A] text-sm font-semibold font-['Lexend']">
+                  {totalHours} {totalHours === 1 ? "hour" : "hours"} × {caretaker.hourlyRate} {caretaker.currency || "thb"}/hr
+                </span>
               </div>
             </div>
           </div>

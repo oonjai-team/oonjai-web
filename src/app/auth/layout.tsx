@@ -18,7 +18,7 @@ export default function AuthLayout({
             <div className="w-[90px] sm:w-[120px]">
               <Link href="/">
                 <Image
-                  src="/images/oonjai-logo.svg"
+                  src="/images/oonjai-logo.png"
                   alt="Oonjai"
                   width={152}
                   height={50}

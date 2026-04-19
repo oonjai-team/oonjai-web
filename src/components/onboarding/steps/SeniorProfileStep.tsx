@@ -16,26 +16,72 @@ import {
 interface Props { onboardingData: OnboardingData; onNext: () => void }
 
 const MOBILITY_OPTIONS = [
-  { label: "Independent", IconComponent: IndependentIcon },
-  { label: "Require a cane", IconComponent: CaneIcon },
-  { label: "Wheelchair", IconComponent: WheelchairIcon },
-  { label: "Bed Bound", IconComponent: BedboundIcon },
+  {
+    label: "Independent",
+    IconComponent: IndependentIcon,
+    tooltip: "Walks and moves around on their own without any mobility aids or assistance.",
+  },
+  {
+    label: "Require a cane",
+    IconComponent: CaneIcon,
+    tooltip: "Needs a cane, walker, or similar aid to walk safely, but can still move around on their own.",
+  },
+  {
+    label: "Wheelchair",
+    IconComponent: WheelchairIcon,
+    tooltip: "Uses a wheelchair for most or all movement. May need help transferring in or out.",
+  },
+  {
+    label: "Bed Bound",
+    IconComponent: BedboundIcon,
+    tooltip: "Unable to leave the bed without significant assistance. Requires full-time support.",
+  },
 ]
 
 const CHRONIC_OPTIONS = [
-  { label: "Cardiovascular Diseases", IconComponent: HeartIcon },
-  { label: "Metabolic & Endocrine Disorders", IconComponent: MetabolicIcon },
-  { label: "Respiratory Diseases", IconComponent: RespiratoryIcon },
-  { label: "Musculoskeletal Conditions", IconComponent: BoneIcon },
-  { label: "Mental Health Conditions", IconComponent: MentalIcon },
-  { label: "Neurological Conditions", IconComponent: BrainIcon },
+  {
+    label: "Cardiovascular Diseases",
+    IconComponent: HeartIcon,
+    tooltip: "Conditions affecting the heart or blood vessels, such as hypertension, heart disease, or stroke.",
+  },
+  {
+    label: "Metabolic & Endocrine Disorders",
+    IconComponent: MetabolicIcon,
+    tooltip: "Conditions like diabetes, thyroid disorders, or other hormone-related imbalances.",
+  },
+  {
+    label: "Respiratory Diseases",
+    IconComponent: RespiratoryIcon,
+    tooltip: "Breathing-related conditions such as asthma, COPD, or chronic bronchitis.",
+  },
+  {
+    label: "Musculoskeletal Conditions",
+    IconComponent: BoneIcon,
+    tooltip: "Joint, bone, or muscle conditions such as arthritis, osteoporosis, or chronic back pain.",
+  },
+  {
+    label: "Mental Health Conditions",
+    IconComponent: MentalIcon,
+    tooltip: "Conditions such as depression, anxiety, or other mental health concerns.",
+  },
+  {
+    label: "Neurological Conditions",
+    IconComponent: BrainIcon,
+    tooltip: "Conditions affecting the brain or nervous system, such as Parkinson's, Alzheimer's, or dementia.",
+  },
 ]
 
 // FIX #2 — Tooltip bubble
-function Tooltip({ text }: { text: string }) {
+function Tooltip({ text, placement = "right" }: { text: string; placement?: "right" | "left" }) {
   const [show, setShow] = useState(false)
+  const bubblePos = placement === "left"
+    ? "right-6 top-0"
+    : "left-6 top-0"
   return (
-    <span className="relative inline-flex ml-1">
+    <span
+      className="relative inline-flex ml-1"
+      onClick={(e) => { e.stopPropagation(); setShow(s => !s) }}
+    >
       <span
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
@@ -43,8 +89,8 @@ function Tooltip({ text }: { text: string }) {
         text-[10px] flex items-center justify-center cursor-pointer select-none"
       >?</span>
       {show && (
-        <span className="absolute left-6 top-0 z-30 w-56 bg-zinc-800
-        text-white text-xs font-light rounded px-3 py-2 shadow-lg whitespace-normal">
+        <span className={`absolute ${bubblePos} z-30 w-56 bg-zinc-800
+        text-white text-xs font-light rounded px-3 py-2 shadow-lg whitespace-normal`}>
           {text}
         </span>
       )}
@@ -91,7 +137,7 @@ function DropdownSelect({
   required?: boolean
   error?: string
   hint?: string
-  options: { label: string; IconComponent?: React.ComponentType<{ className?: string; width?: number; height?: number }> }[]
+  options: { label: string; tooltip?: string; IconComponent?: React.ComponentType<{ className?: string; width?: number; height?: number }> }[]
   value: string
   onChange: (val: string) => void  // renamed v → val to avoid unused-vars lint
 }) {
@@ -141,7 +187,7 @@ function DropdownSelect({
       {open && (
         <div className="absolute top-full left-0 w-80 z-20
         bg-white rounded outline outline-1 outline-offset-[-1px]
-        outline-[#b1b1b1] overflow-hidden shadow-sm">
+        outline-[#b1b1b1] shadow-sm">
           {options.map(o => (
             <button
               key={o.label}
@@ -159,6 +205,7 @@ function DropdownSelect({
                   <o.IconComponent width={20} height={20} className="shrink-0" />
                 )}
                 <span>{o.label}</span>
+                {o.tooltip && <Tooltip text={o.tooltip} />}
               </div>
               {value === o.label && (
                 <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3">
@@ -260,10 +307,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
     }
   }
 
-  const handleAddAnother = () => {
-    const e = validate()
-    if (Object.keys(e).length) { setErrors(e); return }
-    setSeniors(s => [...s, form])
+  const resetForm = () => {
     setForm({
       fullName: "", nickName: "", dateOfBirth: "",
       mobility: "", chronic: "", allergy: "",
@@ -272,6 +316,18 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
     })
     setPhoto(null)
     setErrors({})
+  }
+
+  const handleAddAnother = () => {
+    const e = validate()
+    if (Object.keys(e).length) { setErrors(e); return }
+    setSeniors(s => [...s, form])
+    resetForm()
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const handleCancelAnother = () => {
+    resetForm()
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
@@ -449,7 +505,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             />
           </div>
 
-          <div className="flex justify-center mt-4">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mt-4">
             <button
               type="button"
               onClick={handleAddAnother}
@@ -466,6 +522,24 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
                 Add Another Senior
               </span>
             </button>
+            {seniors.length > 0 && (
+              <button
+                type="button"
+                onClick={handleCancelAnother}
+                className="w-80 sm:w-auto px-5 py-2.5 bg-white rounded-[10px]
+                outline outline-1 outline-offset-[-1px] outline-[#b1b1b1]
+                flex justify-center items-center gap-2.5
+                hover:bg-[#CF4538]/10 hover:outline-[#CF4538] transition-colors cursor-pointer"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-[#b1b1b1]">
+                  <path d="M6 6l12 12M18 6L6 18"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <span className="text-zinc-700 text-sm font-light font-['Lexend']">
+                  Discard
+                </span>
+              </button>
+            )}
           </div>
 
         </div>
