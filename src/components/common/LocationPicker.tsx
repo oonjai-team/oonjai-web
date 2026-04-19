@@ -138,7 +138,7 @@ export default function LocationPicker({ value, onChange, required, error }: Loc
           value={query}
           onChange={handleInputChange}
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-          className={`w-full border rounded-xl py-3 pl-4 pr-16 text-sm font-medium focus:outline-none focus:ring-1 ${
+          className={`w-full border rounded-xl py-3 pl-4 pr-16 text-gray-800 text-sm font-medium focus:outline-none focus:ring-1 ${
             error
               ? "border-[#CF4538] focus:border-[#CF4538] focus:ring-[#CF4538]"
               : "border-gray-300 focus:border-[#3A5A40] focus:ring-[#3A5A40]"

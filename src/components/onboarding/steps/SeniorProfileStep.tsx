@@ -477,7 +477,6 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
           {/* FIX #3 — multiselect hint */}
           <DropdownSelect
             label="Chronic Diseases"
-            hint="you may select multiple"
             options={CHRONIC_OPTIONS}
             value={form.chronic}
             onChange={val => set("chronic", val)}
