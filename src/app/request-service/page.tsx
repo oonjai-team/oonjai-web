@@ -15,7 +15,8 @@ import {
   Sun,
   User,
   AlertTriangle,
-  ChevronDown
+  ChevronDown,
+  Clock
 } from 'lucide-react';
 import LocationPicker from '@/components/common/LocationPicker';
 import { Header } from '@/components/common/Header';
@@ -33,6 +34,14 @@ const SERVICE_TYPE_MAP: Record<string, string> = {
 }
 
 const FORM_DRAFT_KEY = "requestServiceFormDraft";
+
+// FIX #5 — compute duration in hours between two ISO datetime strings
+function computeDurationHours(start: string, end: string): number | null {
+  if (!start || !end) return null;
+  const diff = new Date(end).getTime() - new Date(start).getTime();
+  if (diff <= 0) return null;
+  return Math.round((diff / (1000 * 60 * 60)) * 10) / 10; // 1 decimal place
+}
 
 export default function RequestServicePage() {
   const router = useRouter();
@@ -62,11 +71,13 @@ export default function RequestServicePage() {
   const hourOptions = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
   const minuteOptions = ['00', '15', '30', '45'];
 
-  // Combined ISO strings for downstream use (conflict checks, submission)
   const combinedStartDate = formData.startDate
     ? `${formData.startDate}T${formData.startHour}:${formData.startMinute}` : '';
   const combinedEndDate = formData.endDate
     ? `${formData.endDate}T${formData.endHour}:${formData.endMinute}` : '';
+
+  // FIX #5 — compute duration to display
+  const durationHours = computeDurationHours(combinedStartDate, combinedEndDate);
 
   const loadData = async () => {
     setLoading(true);
@@ -89,7 +100,6 @@ export default function RequestServicePage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Restore draft when returning from caretaker selection (?resume=1)
   useEffect(() => {
     if (searchParams?.get('resume') !== '1') return;
     if (typeof window === 'undefined') return;
@@ -101,12 +111,9 @@ export default function RequestServicePage() {
         setFormData(prev => ({ ...prev, ...draft }));
         setView('form');
       });
-    } catch {
-      /* ignore malformed draft */
-    }
+    } catch { /* ignore malformed draft */ }
   }, [searchParams]);
 
-  // Check senior conflicts when dates/times change — deselect senior if now conflicted
   useEffect(() => {
     if (!combinedStartDate || !combinedEndDate) {
       React.startTransition(() => setSeniorConflicts([]));
@@ -117,7 +124,6 @@ export default function RequestServicePage() {
       if (cancelled) return;
       React.startTransition(() => {
         setSeniorConflicts(conflicts);
-        // Auto-deselect senior if they became unavailable
         setFormData(prev => {
           if (prev.seniorId && conflicts.includes(prev.seniorId)) {
             return { ...prev, seniorId: '' };
@@ -127,9 +133,8 @@ export default function RequestServicePage() {
       });
     });
     return () => { cancelled = true; };
-  }, [combinedStartDate, combinedEndDate]);  
+  }, [combinedStartDate, combinedEndDate]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -146,13 +151,10 @@ export default function RequestServicePage() {
   };
 
   const selectedSenior = seniors.find(s => s.id === formData.seniorId);
-
   const getAge = getAgeFromDOB;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Store booking request data in sessionStorage for the caretaker selection page
     const bookingRequest = {
       seniorId: formData.seniorId,
       serviceType: SERVICE_TYPE_MAP[formData.serviceType] || "medical_escort",
@@ -161,7 +163,6 @@ export default function RequestServicePage() {
       location: formData.location,
       note: formData.additionalInfo,
     };
-
     sessionStorage.setItem("pendingBookingRequest", JSON.stringify(bookingRequest));
     sessionStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(formData));
     router.push("/booking");
@@ -353,6 +354,31 @@ export default function RequestServicePage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* FIX #5 — Duration summary shown once both times are filled */}
+                      {durationHours !== null && durationHours > 0 && (
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F4F9F5] border border-[#c8dece] rounded-xl">
+                          <Clock size={14} className="text-[#3A5A40] flex-shrink-0" />
+                          <span className="text-xs font-medium text-[#3A5A40]">
+                            Duration:{' '}
+                            <span className="font-bold">
+                              {Number.isInteger(durationHours)
+                                ? `${durationHours} hr${durationHours !== 1 ? 's' : ''}`
+                                : `${durationHours} hrs`}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Warn if end is before start */}
+                      {durationHours !== null && durationHours <= 0 && (
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
+                          <AlertTriangle size={14} className="text-orange-500 flex-shrink-0" />
+                          <span className="text-xs font-medium text-orange-700">
+                            End time must be after start time.
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -371,7 +397,6 @@ export default function RequestServicePage() {
                   <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-200 shadow-sm">
                     <label className="block text-xs font-bold text-gray-800 mb-2">Select Senior Profile</label>
 
-                    {/* Custom Senior Dropdown */}
                     <div ref={dropdownRef} className="relative w-full md:w-2/3">
                       <button
                         type="button"
@@ -471,7 +496,6 @@ export default function RequestServicePage() {
                       )}
                     </div>
 
-                    {/* Hint when seniors are unavailable */}
                     {seniorConflicts.length > 0 && (
                       <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-2">
                         <AlertTriangle size={14} className="text-orange-500 flex-shrink-0 mt-0.5" />

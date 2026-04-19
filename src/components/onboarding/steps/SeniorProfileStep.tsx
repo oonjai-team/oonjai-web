@@ -31,20 +31,44 @@ const CHRONIC_OPTIONS = [
   { label: "Neurological Conditions", IconComponent: BrainIcon },
 ]
 
+// FIX #2 — Tooltip bubble
+function Tooltip({ text }: { text: string }) {
+  const [show, setShow] = useState(false)
+  return (
+    <span className="relative inline-flex ml-1">
+      <span
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="w-4 h-4 rounded-full bg-[#b1b1b1] text-white
+        text-[10px] flex items-center justify-center cursor-pointer select-none"
+      >?</span>
+      {show && (
+        <span className="absolute left-6 top-0 z-30 w-56 bg-zinc-800
+        text-white text-xs font-light rounded px-3 py-2 shadow-lg whitespace-normal">
+          {text}
+        </span>
+      )}
+    </span>
+  )
+}
+
+// FIX #1/#7 — text-zinc-600 → text-zinc-900
+// FIX #2 — tooltip prop added
 function ProfileInput({
-  label, required, error, ...props
+  label, required, error, tooltip, ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & {
-  label: string; required?: boolean; error?: string
+  label: string; required?: boolean; error?: string; tooltip?: string
 }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-oonjai-green-500 text-base
-      font-light font-['Lexend']">
+      font-light font-['Lexend'] flex items-center">
         {label}{required && " *"}
+        {tooltip && <Tooltip text={tooltip} />}
       </label>
       <input
         className={`h-9 pl-5 pr-3 py-5 bg-white rounded
-        text-zinc-600 text-base font-light font-['Lexend']
+        text-zinc-900 text-base font-light font-['Lexend']
         transition-all w-full
         ${error
           ? "outline outline-2 outline-offset-[-1px] outline-[#CF4538]"
@@ -59,25 +83,33 @@ function ProfileInput({
   )
 }
 
+// FIX #3 — hint prop added for multiselect label
 function DropdownSelect({
-  label, required, options, value, onChange, error
+  label, required, options, value, onChange, error, hint
 }: {
   label: string
   required?: boolean
   error?: string
+  hint?: string
   options: { label: string; IconComponent?: React.ComponentType<{ className?: string; width?: number; height?: number }> }[]
   value: string
-  onChange: (v: string) => void
+  onChange: (val: string) => void  // renamed v → val to avoid unused-vars lint
 }) {
   const [open, setOpen] = useState(false)
   const selectedOption = options.find((o) => o.label === value)
 
   return (
     <div className="w-full flex flex-col gap-1 relative">
-      <label className="text-oonjai-green-500 text-base
-      font-light font-['Lexend']">
-        {label}{required && " *"}
-      </label>
+      <div className="flex items-center justify-between">
+        <label className="text-oonjai-green-500 text-base font-light font-['Lexend']">
+          {label}{required && " *"}
+        </label>
+        {hint && (
+          <span className="text-[#b1b1b1] text-xs font-light font-['Lexend'] italic">
+            * {hint}
+          </span>
+        )}
+      </div>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -97,10 +129,8 @@ function DropdownSelect({
             {value || "Select..."}
           </span>
         </div>
-
         <svg
-          className={`w-4 h-4 text-oonjai-green-500 transition-transform
-          ${open ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-oonjai-green-500 transition-transform ${open ? "rotate-180" : ""}`}
           viewBox="0 0 16 16" fill="none"
         >
           <path d="M4 6l4 4 4-4" stroke="currentColor"
@@ -130,40 +160,43 @@ function DropdownSelect({
                 )}
                 <span>{o.label}</span>
               </div>
-
               {value === o.label && (
                 <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3">
                   <path d="M2 6l3 3 5-5" stroke="#365C48"
-                  strokeWidth="1.5" strokeLinecap="round"
-                  strokeLinejoin="round"/>
+                  strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
             </button>
           ))}
         </div>
       )}
-      {error && (
-        <p className="text-xs text-[#CF4538]">⚠ {error}</p>
-      )}
+      {error && <p className="text-xs text-[#CF4538]">⚠ {error}</p>}
     </div>
   )
 }
 
+type FieldConfig = {
+  key: string
+  label: string
+  tooltip?: string
+  full: boolean
+}
+
 export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
-  const [photo, setPhoto]       = useState<string | null>(null)
-  const [seniors, setSeniors]   = useState<Record<string, string>[]>([])
-  const [form, setForm]         = useState({
+  const [photo, setPhoto]     = useState<string | null>(null)
+  const [seniors, setSeniors] = useState<Record<string, string>[]>([])
+  const [form, setForm]       = useState({
     fullName: "", nickName: "", dateOfBirth: "",
     mobility: "", chronic: "", allergy: "",
     handicap: "", specialNeeds: "", emergencyNo: "",
     hospital: "", location: "",
   })
-  const [errors, setErrors]     = useState<Record<string, string>>({})
-  const [loading, setLoading]   = useState(false)
-  const fileRef                 = useRef<HTMLInputElement>(null)
+  const [errors, setErrors]   = useState<Record<string, string>>({})
+  const [loading, setLoading] = useState(false)
+  const fileRef               = useRef<HTMLInputElement>(null)
 
-  const set = (k: string, v: string) => {
-    setForm(f => ({ ...f, [k]: v }))
+  const set = (k: string, val: string) => {
+    setForm(f => ({ ...f, [k]: val }))
     setErrors(e => ({ ...e, [k]: "" }))
   }
 
@@ -186,10 +219,6 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
   }
 
   const handleFinish = async () => {
-    // Assemble the full list to create: everything queued via "Add Another
-    // Senior" plus the current form (when it has any data). If the form is
-    // empty AND nothing is queued, fall back to the normal required-fields
-    // validation so the user sees the usual errors.
     const queued = [...seniors]
     const formHasData = !!(form.fullName.trim() || form.dateOfBirth.trim() || form.mobility.trim())
     if (formHasData) {
@@ -203,11 +232,13 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
 
     setLoading(true)
     try {
-      // 1. Submit onboarding data (phone, relationship, goal, concerns)
       const onboardingOk = await submitOnboarding(onboardingData)
-      if (!onboardingOk) { setErrors({ fullName: "Failed to save onboarding data." }); setLoading(false); return }
+      if (!onboardingOk) {
+        setErrors({ fullName: "Failed to save onboarding data." })
+        setLoading(false)
+        return
+      }
 
-      // 2. Create every queued senior profile
       for (const s of queued) {
         const senior = await createSenior({
           fullname: s.fullName,
@@ -222,7 +253,6 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
           return
         }
       }
-
       onNext()
     } catch {
       setErrors({ fullName: "Something went wrong. Please try again." })
@@ -234,8 +264,6 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     setSeniors(s => [...s, form])
-    // Carry the home location forward — most households have one address,
-    // so defaulting it saves typing. The user can still change it.
     setForm({
       fullName: "", nickName: "", dateOfBirth: "",
       mobility: "", chronic: "", allergy: "",
@@ -252,12 +280,17 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
     if (file) setPhoto(URL.createObjectURL(file))
   }
 
+  const fields: FieldConfig[] = [
+    { key: "allergy",      label: "Allergy",                    tooltip: "List any food, medication, or environmental allergies.", full: false },
+    { key: "handicap",     label: "Handicap",                   tooltip: "Any physical or cognitive impairments we should be aware of.", full: false },
+    { key: "specialNeeds", label: "Special Needs and Concerns", full: true },
+    { key: "emergencyNo",  label: "Second Emergency Number",    full: true },
+    { key: "hospital",     label: "Preferred Hospital",         full: true },
+  ]
+
   return (
     <>
-      {/* Outer — full width */}
       <div className="flex flex-col items-center gap-3 w-full">
-
-        {/* Inner — content constrained to max-w-[600px] */}
         <div className="w-full max-w-[600px] flex flex-col gap-3">
 
           <h2 className="w-full text-center
@@ -265,7 +298,6 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             Set Up Your<br className="sm:hidden block"/> Senior Profile
           </h2>
 
-          {/* Saved seniors list */}
           {seniors.length > 0 && (
             <div className="flex flex-col gap-2 w-full">
               {seniors.map((s, i) => (
@@ -280,8 +312,9 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
                       {i + 1}
                     </div>
                     <div>
-                      <p className="text-oonjai-green-500 text-sm
-                      font-medium font-['Lexend']">{s.fullName}</p>
+                      <p className="text-oonjai-green-500 text-sm font-medium font-['Lexend']">
+                        {s.fullName}
+                      </p>
                       <p className="text-[#b1b1b1] text-xs font-light font-['Lexend']">
                         {(() => {
                           const age = getAgeFromDOB(s.dateOfBirth)
@@ -293,8 +326,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
                   <button
                     type="button"
                     onClick={() => setSeniors(list => list.filter((_, idx) => idx !== i))}
-                    className="text-[#b1b1b1] hover:text-[#CF4538]
-                    transition-colors cursor-pointer text-sm">
+                    className="text-[#b1b1b1] hover:text-[#CF4538] transition-colors cursor-pointer text-sm">
                     ✕
                   </button>
                 </div>
@@ -302,7 +334,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             </div>
           )}
 
-          {/* Photo upload */}
+          {/* Photo upload — FIX: use <Image> for both cases */}
           <div className="py-3.5 flex flex-col items-center gap-2">
             <div
               onClick={() => fileRef.current?.click()}
@@ -311,13 +343,20 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
               overflow-hidden cursor-pointer relative"
             >
               {photo ? (
-                <img src={photo} alt="Senior"
-                className="w-full h-full object-cover" />
+                <Image
+                  src={photo}
+                  alt="Senior"
+                  width={114}
+                  height={114}
+                  unoptimized
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <Image
                   src="/images/onboarding/avatar-placeholder.png"
                   alt="Avatar placeholder"
-                  width={114} height={114}
+                  width={114}
+                  height={114}
                   className="object-cover"
                 />
               )}
@@ -337,7 +376,6 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             />
           </div>
 
-          {/* Full Name */}
           <ProfileInput
             label="Full Name" required
             placeholder=""
@@ -346,7 +384,6 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             onChange={e => set("fullName", e.target.value)}
           />
 
-          {/* Nick Name + Date of Birth row */}
           <div className="flex justify-between items-start gap-4">
             <div className="flex-1">
               <ProfileInput
@@ -373,34 +410,29 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             </p>
           )}
 
-          {/* Mobility Level dropdown */}
           <DropdownSelect
             label="Mobility Level" required
             options={MOBILITY_OPTIONS}
             value={form.mobility}
-            onChange={v => set("mobility", v)}
+            onChange={val => set("mobility", val)}
             error={errors.mobility}
           />
 
-          {/* Chronic Diseases dropdown */}
+          {/* FIX #3 — multiselect hint */}
           <DropdownSelect
             label="Chronic Diseases"
+            hint="you may select multiple"
             options={CHRONIC_OPTIONS}
             value={form.chronic}
-            onChange={v => set("chronic", v)}
+            onChange={val => set("chronic", val)}
           />
 
-          {/* Text inputs */}
-          {[
-            { key: "allergy",      label: "Allergy",                    full: false },
-            { key: "handicap",     label: "Handicap",                   full: false },
-            { key: "specialNeeds", label: "Special Needs and Concerns", full: true  },
-            { key: "emergencyNo",  label: "Second Emergency Number",    full: true  },
-            { key: "hospital",     label: "Preferred Hospital",         full: true  },
-          ].map(f => (
+          {/* FIX #2 — tooltips on allergy & handicap */}
+          {fields.map(f => (
             <div key={f.key} className={f.full ? "w-full" : "w-full sm:w-6/8"}>
               <ProfileInput
                 label={f.label}
+                tooltip={f.tooltip}
                 placeholder=""
                 value={form[f.key as keyof typeof form]}
                 onChange={e => set(f.key, e.target.value)}
@@ -408,17 +440,15 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             </div>
           ))}
 
-          {/* Location */}
           <div className="w-full mb-4">
             <LocationPicker
               value={form.location}
-              onChange={(location) => set("location", location)}
+              onChange={location => set("location", location)}
               required
               error={errors.location}
             />
           </div>
 
-          {/* Add Another Senior */}
           <div className="flex justify-center mt-4">
             <button
               type="button"
@@ -428,8 +458,7 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
               flex justify-center items-center gap-2.5
               hover:bg-oonjai-cream-100 transition-colors cursor-pointer"
             >
-              <svg viewBox="0 0 24 24" fill="none"
-              className="w-5 h-5 text-[#b1b1b1]">
+              <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-[#b1b1b1]">
                 <path d="M12 5v14M5 12h14"
                 stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
@@ -439,8 +468,8 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
             </button>
           </div>
 
-        </div>{/* end max-w-[600px] */}
-      </div>{/* end outer */}
+        </div>
+      </div>
 
       <div className="mt-6">
         <OJContinueButton
@@ -449,7 +478,6 @@ export default function SeniorProfileStep({ onboardingData, onNext }: Props) {
           loading={loading}
         />
       </div>
-
     </>
   )
 }
