@@ -135,16 +135,20 @@ export default function ActivityDetailsPage({ params }: { params: Promise<{ id: 
                 )}
               </div>
             </div>
-            <Accordion title="Activity Overview" defaultOpen={true}>
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry&apos;s standard dummy text ever since the 1500s.
-            </Accordion>
-            <Accordion title="What To Bring">
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Comfortable, breathable clothing</li>
-                <li>Water bottle</li>
-                <li>Sunscreen and hat</li>
-              </ul>
-            </Accordion>
+            {activity.overview && activity.overview.trim().length > 0 && (
+              <Accordion title="Activity Overview" defaultOpen={true}>
+                {activity.overview}
+              </Accordion>
+            )}
+            {activity.whatToBring && activity.whatToBring.length > 0 && (
+              <Accordion title="What To Bring">
+                <ul className="list-disc pl-5 space-y-1">
+                  {activity.whatToBring.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              </Accordion>
+            )}
           </div>
           <div className="lg:w-[350px] flex-shrink-0">
             <div className="sticky top-6 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">

@@ -19,6 +19,8 @@ export interface ActivityData {
   rating: number
   reviews: number
   images: string[]
+  overview?: string
+  whatToBring?: string[]
 }
 
 export interface ActivityFilterParams {
