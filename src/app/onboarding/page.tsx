@@ -94,7 +94,7 @@ export default function OnboardingPage() {
       setStep(STEP_KEYS[i + 1])
     } else {
       await refreshSession()
-      router.push("/booking")
+      router.push("/activity-status")
     }
   }
 
