@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -140,6 +140,8 @@ export default function CaretakerSelectionPage() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({})
   const [bookingRequest, setBookingRequest] = useState<PendingBookingRequest | null>(null)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const PAGE_SIZE = 8
 
   // Read pending booking request from sessionStorage on mount
   useEffect(() => {
@@ -185,6 +187,7 @@ export default function CaretakerSelectionPage() {
 
     const data = await fetchCaretakers(filters)
     setCaretakers(data)
+    setVisible(PAGE_SIZE)
     setLoading(false)
   }
 
@@ -217,6 +220,24 @@ export default function CaretakerSelectionPage() {
 
   const totalSelected = Object.values(selectedFilters).flat().length
   const shown = sortedCaretakers.slice(0, visible)
+  const hasMore = visible < sortedCaretakers.length
+
+  // Infinite scroll — bump `visible` when the sentinel enters the viewport
+  useEffect(() => {
+    if (!hasMore || loading) return
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0]?.isIntersecting) {
+          setVisible(v => Math.min(v + PAGE_SIZE, sortedCaretakers.length))
+        }
+      },
+      { rootMargin: "200px 0px" },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, loading, sortedCaretakers.length])
 
   return (
     <>
@@ -304,7 +325,7 @@ export default function CaretakerSelectionPage() {
                 <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-xl shadow-[0px_4px_16px_0px_rgba(0,0,0,0.1)] overflow-hidden z-20">
                   {SORT_OPTIONS.map(opt => (
                     <button key={opt} type="button"
-                      onClick={() => { setSort(opt); setSortOpen(false) }}
+                      onClick={() => { setSort(opt); setVisible(PAGE_SIZE); setSortOpen(false) }}
                       className={`w-full px-4 py-3 text-left text-sm font-['Lexend'] transition-colors cursor-pointer ${sort === opt ? "bg-oonjai-green-50 text-oonjai-green-500 font-medium" : "text-[#0E211A] font-normal hover:bg-oonjai-green-50"}`}>
                       {opt}
                     </button>
@@ -328,15 +349,9 @@ export default function CaretakerSelectionPage() {
           </div>
         )}
 
-        {!loading && visible < caretakers.length && (
-          <div className="flex justify-center">
-            <button type="button" onClick={() => setVisible(v => v + 4)}
-              className="px-8 py-3 bg-white rounded-xl border border-dashed border-oonjai-green-300 text-oonjai-green-500 text-sm font-normal font-['Lexend'] flex items-center gap-2 hover:bg-oonjai-green-50 transition-colors cursor-pointer">
-              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Load more caretakers
-            </button>
+        {!loading && hasMore && (
+          <div ref={sentinelRef} className="flex justify-center py-6" aria-hidden>
+            <div className="h-6 w-6 animate-spin rounded-full border-4 border-oonjai-green-300 border-t-transparent" />
           </div>
         )}
 

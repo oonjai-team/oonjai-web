@@ -28,7 +28,7 @@ export default function LoginPage() {
     const result = await login(form.email, form.password);
 
     if (result.success) {
-      router.push(needsOnboarding ? "/onboarding" : "/booking");
+      router.push(needsOnboarding ? "/onboarding" : "/activity-status");
     } else {
       setError(result.error || "Login failed");
     }
