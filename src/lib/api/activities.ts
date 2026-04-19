@@ -79,6 +79,7 @@ export interface BookActivityPayload {
 
 export interface ActivityBookingResponse {
   bookingId: string
+  bookingIds?: string[]
   activityId: string
   seniorIds: string[]
   pickupMode: string
