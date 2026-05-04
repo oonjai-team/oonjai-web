@@ -98,6 +98,13 @@ export default function OnboardingPage() {
     }
   }
 
+  const back = () => {
+    const i = STEP_KEYS.indexOf(step)
+    if (i > 0) setStep(STEP_KEYS[i - 1])
+  }
+
+  const canGoBack = STEP_KEYS.indexOf(step) > 0
+
   return (
     <OnboardingShell
       step={stepIndex}
@@ -106,6 +113,7 @@ export default function OnboardingPage() {
       illustrationH={config.illustrationH}
       illustrationPos={config.illustrationPos}
       centered={config.centered}
+      onBack={canGoBack ? back : undefined}
     >
       {step === "phone" && (
         <PhoneStep onNext={(phone) => { setData(d => ({ ...d, phone })); next() }} />

@@ -13,12 +13,29 @@ interface Props {
   illustrationH: number
   illustrationPos?: string
   centered?: boolean
+  onBack?: () => void
+}
+
+function BackButton({ onBack, className = "" }: { onBack: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      aria-label="Go back to previous step"
+      className={`inline-flex items-center justify-center w-9 h-9 rounded-full text-oonjai-green-500 hover:bg-oonjai-sec-green-100 transition-colors ${className}`}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+    </button>
+  )
 }
 
 export default function OnboardingShell({
   children, step, totalSteps = 5,
   illustration, illustrationW, illustrationH, illustrationPos,
-  centered = false
+  centered = false,
+  onBack,
 }: Props) {
   return (
     <div className="w-full flex justify-center items-center min-h-screen bg-oonjai-cream-400">
@@ -57,6 +74,13 @@ export default function OnboardingShell({
         shadow-[0px_-4px_16px_0px_rgba(0,0,0,0.1)] flex-1 min-h-0 px-6 pt-11 pb-8 flex flex-col gap-4
         overflow-y-auto
         ${illustration && step === 1 ? "-mt-4" : "mt-0"}`}>
+
+            {/* Back button */}
+            {onBack && (
+              <div className="flex-shrink-0 -mt-2 -ml-2 mb-1">
+                <BackButton onBack={onBack} />
+              </div>
+            )}
 
             {/* Progress bar */}
             <div className="flex items-center gap-2 w-full mb-4 flex-shrink-0">
@@ -109,13 +133,16 @@ export default function OnboardingShell({
 
             {/* Logo + progress */}
             <div className="flex flex-col gap-3 w-full">
-              <Image
-                src="/images/logo.svg"
-                alt="Oonjai"
-                width={110}
-                height={53}
-                priority
-              />
+              <div className="flex items-center gap-3">
+                {onBack && <BackButton onBack={onBack} className="-ml-2" />}
+                <Image
+                  src="/images/logo.svg"
+                  alt="Oonjai"
+                  width={110}
+                  height={53}
+                  priority
+                />
+              </div>
               <div className="flex items-center gap-2 w-full">
                 {Array.from({ length: totalSteps }).map((_, i) => (
                   <div

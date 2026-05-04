@@ -71,6 +71,8 @@ export default function RequestServicePage() {
   const hourOptions = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
   const minuteOptions = ['00', '15', '30', '45'];
 
+  const todayISO = new Date().toLocaleDateString('en-CA');
+
   const combinedStartDate = formData.startDate
     ? `${formData.startDate}T${formData.startHour}:${formData.startMinute}` : '';
   const combinedEndDate = formData.endDate
@@ -78,6 +80,7 @@ export default function RequestServicePage() {
 
   // FIX #5 — compute duration to display
   const durationHours = computeDurationHours(combinedStartDate, combinedEndDate);
+
 
   const loadData = async () => {
     setLoading(true);
@@ -155,6 +158,10 @@ export default function RequestServicePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (combinedStartDate && new Date(combinedStartDate).getTime() < Date.now()) {
+      alert("Start date and time must be in the future.");
+      return;
+    }
     const bookingRequest = {
       seniorId: formData.seniorId,
       serviceType: SERVICE_TYPE_MAP[formData.serviceType] || "medical_escort",
@@ -287,6 +294,7 @@ export default function RequestServicePage() {
                             required
                             type="date"
                             name="startDate"
+                            min={todayISO}
                             value={formData.startDate}
                             onChange={handleChange}
                             className="flex-1 min-w-0 border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40]"
@@ -325,6 +333,7 @@ export default function RequestServicePage() {
                             required
                             type="date"
                             name="endDate"
+                            min={formData.startDate || todayISO}
                             value={formData.endDate}
                             onChange={handleChange}
                             className="flex-1 min-w-0 border border-gray-300 rounded-xl py-3 px-4 text-sm font-medium focus:outline-none focus:border-[#3A5A40] focus:ring-1 focus:ring-[#3A5A40]"
@@ -379,6 +388,7 @@ export default function RequestServicePage() {
                           </span>
                         </div>
                       )}
+
                     </div>
 
                     <div>
