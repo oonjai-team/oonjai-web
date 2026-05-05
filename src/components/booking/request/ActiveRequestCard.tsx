@@ -55,7 +55,7 @@ export const ActiveRequestCard = ({
 
       <div className="flex flex-col items-end justify-between self-stretch ml-4">
         <span className={`text-[9px] font-bold px-2 py-1.5 rounded-md uppercase tracking-wider whitespace-nowrap ${
-          status === 'WAITING CONFIRMATION' ? 'bg-orange-200 text-orange-900' : 'bg-green-100 text-[#3A5A40]'
+          status === 'WAITING CONFIRMATION' ? 'bg-orange-200 text-orange-900' : 'bg-red-100 text-red-800'
         }`}>
           {status}
         </span>
